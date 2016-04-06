@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+LC_ALL=C
+trap "rm -f /run/$(basename $0).pid; exit" 0 1 2 3 15
+echo "$BASHPID" > /run/$(basename $0).pid
+source /usr/bin/variables
+live_check
+case "$1" in
+	minimal)
+		apt -y purge autopsy chkrootkit wifite wireshark zenmap ethtool fsarchiver yersinia 0trace amap arp-scan gtkorphan tmux gtkhash desktop-base fontinstaller gksu lightdm xdg-utils xdotool menu-xdg xterm xarchiver x11-touchscreen-calibrator xinput xinput-calibrator xorg xserver-xorg-input-all xserver-xorg-input-elographics xserver-xorg-input-multitouch xserver-xorg-video-all clamtk grsync florence hardinfo arandr synaptic zenity yad disk-manager catfish systemd-ui amd64-microcode atmel-firmware b43-fwcutter discover firmware-linux firmware-atheros firmware-b43legacy-installer firmware-b43-installer firmware-bnx2 firmware-bnx2x firmware-brcm80211 firmware-iwlwifi firmware-libertas firmware-ralink firmware-realtek hdparm hwdata hwinfo intel-microcode libgl1-mesa-dri linux-wlan-ng vainfo mesa-utils va-driver-all acpi lm-sensors joystick jmtpfs mtp-tools mtpfs mdetect dmidecode pcmciautils vblade aoetools firmware-myricom firmware-misc-nonfree firmware-ti-connectivity firmware-qlogic btrfs-tools ntfs-3g xfsprogs e2fsprogs lvm2 dmraid reiserfsprogs reiser4progs hfsprogs hfsutils hardlink cpio cryptsetup gparted parted dosfstools jfsutils disktype f2fs-tools zfsnap grub-pc coreutils rsync sed util-linux lxappearance lxappearance-obconf lxde-common lxde-core lxde-icon-theme lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxsession-logout lxshortcut lxtask lxterminal lxsession-edit obconf thunar-archive-plugin openbox-menu pcmanfm fdpowermon fdpowermon-icons galculator gpicview leafpad compton scrot tint2 nitrogen dconf-editor gnome-system-tools gnome-keyring galternatives xfce4-notifyd iceweasel cifs-utils x11vnc ssvnc xul-ext-https-everywhere filezilla pidgin pidgin-otr transmission axel hplip system-config-printer system-config-printer-udev hp-ppd printer-driver-c2050 printer-driver-c2esp printer-driver-cjet printer-driver-dymo printer-driver-escpr printer-driver-foo2zjs printer-driver-gutenprint printer-driver-hpcups printer-driver-hpijs printer-driver-m2300w printer-driver-min12xxw printer-driver-pnm2ppa printer-driver-postscript-hp printer-driver-ptouch printer-driver-pxljr printer-driver-sag-gdi printer-driver-splix macchanger-gtk modemmanager usb-modeswitch ifupdown isc-dhcp-client ssh wpasupplicant netcat-traditional iputils-ping rfkill vlan network-manager-gnome network-manager-openvpn-gnome network-manager-vpnc-gnome network-manager-pptp-gnome network-manager-iodine-gnome fail2ban gigolo iptraf-ng arptables gufw ntp tcptraceroute mtr-tiny wget clonezilla extundelete foremost magicrescue testdisk scalpel manpages-es util-linux-locales menu-l10n libreoffice-l10n-es iceweasel-l10n-es-es myspell-es aspell-es debconf-i18n locales localepurge libreoffice-help-es hostapd polipo privoxy socat tor tor-arm tsocks torsocks obfs4proxy apt-transport-tor connect-proxy proxychains apparmor-profiles-extra apparmor-notify secure-delete aide-common ophcrack cmospwd psad mat bleachbit lzip lzma lzop
+		limpiar_1
+		optimizacion_1
+		;;
+
+	office)
+		apt -y purge autopsy chkrootkit wifite wireshark zenmap ethtool fsarchiver yersinia 0trace amap arp-scan gtkorphan tmux gtkhash x11vnc ssvnc filezilla pidgin pidgin-otr transmission axel macchanger-gtk fail2ban iptraf-ng arptables gufw ntp tcptraceroute mtr-tiny wget clonezilla extundelete foremost magicrescue testdisk scalpel hostapd polipo privoxy socat tor tor-arm tsocks torsocks obfs4proxy apt-transport-tor connect-proxy proxychains secure-delete aide-common ophcrack cmospwd psad mat bleachbit lzip lzma lzop
+		$insta playonlinux xanadu-archive-keyring xanadu-repo
+		limpiar_1
+		rm -f /usr/share/applications/Adicionales.desktop
+		rm -f /etc/apt/sources.list.d/kali.list
+		rm -f /etc/apt/sources.list.d/liquorix.list
+		rm -f /etc/apt/sources.list.d/tor.list
+		optimizacion_1
+		;;
+
+	*)
+		echo "Este script adapta una instalacion de Xanadu GNU/Linux para hacerla"
+		echo "apta para su uso en oficinas o en entornos headless..."
+		echo "USO: $(basename $0) {minimal|office}"
+		;;
+esac
+rm -f /run/$(basename $0).pid
+exit 0

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+LC_ALL=C
+#sudo rmmod -f ip_tables ip6_tables iptable_filter iptable_mangle iptable_nat iptable_raw bluetooth rfcomm
+exit 0

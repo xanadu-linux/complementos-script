@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+LC_ALL=C
+trap "rm -f /run/$(basename $0).pid; exit" 0 1 2 3 15
+echo "$BASHPID" > /run/$(basename $0).pid
+source /usr/bin/variables
+nombre=revision.txt
+name=$(hostname)
+var1=$(cat /sys/block/zram0/disksize)
+var2=$(cat /sys/kernel/mm/transparent_hugepage/enabled)
+var3=$(cat /sys/kernel/mm/transparent_hugepage/khugepaged/pages_to_scan)
+var4=$(cat /sys/kernel/mm/ksm/run)
+var5=$(cat /sys/kernel/mm/ksm/pages_to_scan)
+var6=$(cat /sys/kernel/mm/ksm/sleep_millisecs)
+var7=$(cat /sys/fs/cgroup/cpu/release_agent)
+var8=$(cat /sys/fs/cgroup/cpu/notify_on_release)
+clear
+
+echo -e "## KERNEL ##""\n" > /tmp/"$nombre"
+uname -r >> /tmp/"$nombre"
+
+echo -e "\n""## CPU ##""\n" >> /tmp/"$nombre"
+lscpu >> /tmp/"$nombre"
+
+echo -e "\n""## HARDWARE ##""\n" >> /tmp/"$nombre"
+hwinfo --short >> /tmp/"$nombre"
+
+echo -e "\n""## PCI ##""\n" >> /tmp/"$nombre"
+lspci >> /tmp/"$nombre"
+
+echo -e "\n""## USB ##""\n" >> /tmp/"$nombre"
+lsusb >> /tmp/"$nombre"
+
+echo -e "\n""## MEMORIA ##""\n" >> /tmp/"$nombre"
+free -h >> /tmp/"$nombre"
+
+echo -e "\n""## DISCO ##""\n" >> /tmp/"$nombre"
+df -h >> /tmp/"$nombre"
+
+echo -e "\n""## SWAP ##""\n" >> /tmp/"$nombre"
+swapon -s >> /tmp/"$nombre"
+
+echo -e "\n""## LAPTOP ##""\n" >> /tmp/"$nombre"
+echo $(laptop-detect -v 2>&1) >> /tmp/"$nombre"
+
+echo -e "\n""## INSTALACION ##""\n" >> /tmp/"$nombre"
+if ! [[ -d /lib/live/mount/rootfs ]] ; then
+	echo "Xanadu esta ejecutandose desde una instalacion." >> /tmp/"$nombre"
+else
+	echo "Xanadu esta ejecutandose en modo live." >> /tmp/"$nombre"
+fi
+
+echo -e "\n""## VERSIONES ##""\n" >> /tmp/"$nombre"
+echo "lightdm: `dpkg-query -W -f='${Version}\n' lightdm`" >> /tmp/"$nombre"
+echo "live-boot: `dpkg-query -W -f='${Version}\n' live-boot`" >> /tmp/"$nombre"
+echo "live-config: `dpkg-query -W -f='${Version}\n' live-config`" >> /tmp/"$nombre"
+echo "lxappearance: `dpkg-query -W -f='${Version}\n' lxappearance`" >> /tmp/"$nombre"
+echo "lxde-common: `dpkg-query -W -f='${Version}\n' lxde-common`" >> /tmp/"$nombre"
+echo "lxde-core: `dpkg-query -W -f='${Version}\n' lxde-core`" >> /tmp/"$nombre"
+echo "lxinput: `dpkg-query -W -f='${Version}\n' lxinput`" >> /tmp/"$nombre"
+echo "lxlauncher: `dpkg-query -W -f='${Version}\n' lxlauncher`" >> /tmp/"$nombre"
+echo "lxmenu-data: `dpkg-query -W -f='${Version}\n' lxmenu-data`" >> /tmp/"$nombre"
+echo "lxpanel: `dpkg-query -W -f='${Version}\n' lxpanel`" >> /tmp/"$nombre"
+echo "lxrandr: `dpkg-query -W -f='${Version}\n' lxrandr`" >> /tmp/"$nombre"
+echo "lxsession: `dpkg-query -W -f='${Version}\n' lxsession`" >> /tmp/"$nombre"
+echo "lxsession-logout: `dpkg-query -W -f='${Version}\n' lxsession-logout`" >> /tmp/"$nombre"
+echo "lxtask: `dpkg-query -W -f='${Version}\n' lxtask`" >> /tmp/"$nombre"
+echo "lxterminal: `dpkg-query -W -f='${Version}\n' lxterminal`" >> /tmp/"$nombre"
+echo "lxmusic: `dpkg-query -W -f='${Version}\n' lxmusic`" >> /tmp/"$nombre"
+echo "lxlauncher: `dpkg-query -W -f='${Version}\n' lxlauncher`" >> /tmp/"$nombre"
+echo "openbox: `dpkg-query -W -f='${Version}\n' openbox`" >> /tmp/"$nombre"
+echo "tor: `dpkg-query -W -f='${Version}\n' tor`" >> /tmp/"$nombre"
+echo "yad: `dpkg-query -W -f='${Version}\n' yad`" >> /tmp/"$nombre"
+echo "zenity: `dpkg-query -W -f='${Version}\n' zenity`" >> /tmp/"$nombre"
+
+echo -e "\n""## VIRTUALIZACION ##""\n" >> /tmp/"$nombre"
+systemd-detect-virt >> /tmp/"$nombre"
+
+echo -e "\n""## TIEMPO DE ARRANQUE ##""\n" >> /tmp/"$nombre"
+systemd-analyze >> /tmp/"$nombre"
+
+echo -e "\n""## OTROS S.O. ##""\n" >> /tmp/"$nombre"
+os-prober >> /tmp/"$nombre"
+
+echo -e "\n""## HOSTNAME ##""\n" >> /tmp/"$nombre"
+if [[ $name = xanadu ]]; then
+	echo "BIEN" >> /tmp/"$nombre"
+else
+	echo "FALLO" >> /tmp/"$nombre"
+	echo "El hostname actual es: "$(hostname) >> /tmp/"$nombre"
+fi
+
+echo -e "\n""## THP ##""\n" >> /tmp/"$nombre"
+echo $var2 >> /tmp/"$nombre"
+
+echo -e "\n""## THP pages_to_scan ##""\n" >> /tmp/"$nombre"
+if [[ $var3 = 20000 ]]; then
+	echo "BIEN" >> /tmp/"$nombre"
+else
+	echo "FALLO" >> /tmp/"$nombre"
+fi
+
+echo -e "\n""## KSM ##""\n" >> /tmp/"$nombre"
+echo $var4 >> /tmp/"$nombre"
+echo $var5 >> /tmp/"$nombre"
+echo $var6 >> /tmp/"$nombre"
+
+echo -e "\n""## cgroup release_agent ##""\n" >> /tmp/"$nombre"
+if [[ $var7 = /usr/local/sbin/cgroup_clean ]]; then
+	echo "BIEN" >> /tmp/"$nombre"
+else
+	echo "FALLO" >> /tmp/"$nombre"
+fi
+
+echo -e "\n""## cgroup notify_on_release ##""\n" >> /tmp/"$nombre"
+if [[ $var8 = 1 ]]; then
+	echo "BIEN" >> /tmp/"$nombre"
+else
+	echo "FALLO" >> /tmp/"$nombre"
+fi
+
+echo -e "\n""## os-release ##""\n" >> /tmp/"$nombre"
+cat /etc/os-release >> /tmp/"$nombre"
+
+echo -e "\n""## lista de directorios ##""\n" >> /tmp/"$nombre"
+if ! [[ -d /var/cache/polipo ]] ; then
+	echo -e "El directorio /var/cache/polipo NO existe""\n" >> /tmp/"$nombre"
+else
+	echo -e "El directorio /var/cache/polipo existe""\n" >> /tmp/"$nombre"
+fi
+if ! [[ -d /var/lib/tor ]] ; then
+	echo -e "El directorio /var/lib/tor NO existe""\n" >> /tmp/"$nombre"
+else
+	echo -e "El directorio /var/lib/tor existe""\n" >> /tmp/"$nombre"
+fi
+if ! [[ -d /var/log/tor ]] ; then
+	echo -e "El directorio /var/log/tor NO existe""\n" >> /tmp/"$nombre"
+else
+	echo -e "El directorio /var/log/tor existe""\n" >> /tmp/"$nombre"
+fi
+if ! [[ -d /run/tor ]] ; then
+	echo -e "El directorio /run/tor NO existe""\n" >> /tmp/"$nombre"
+else
+	echo -e "El directorio /run/tor existe""\n" >> /tmp/"$nombre"
+fi
+if ! [[ -d /tmp/clamav ]] ; then
+	echo -e "El directorio /tmp/clamav NO existe""\n" >> /tmp/"$nombre"
+else
+	echo -e "El directorio /tmp/clamav existe""\n" >> /tmp/"$nombre"
+fi
+
+echo -e "\n""## lista de archivos ##""\n" >> /tmp/"$nombre"
+if ! [[ -f /etc/sysctl.d/10-xanadu-sysctl.conf ]]; then
+	echo -e "El archivo /etc/sysctl.d/10-xanadu-sysctl.conf NO existe""\n" >> /tmp/"$nombre"
+else
+	echo -e "El archivo /etc/sysctl.d/10-xanadu-sysctl.conf existe""\n" >> /tmp/"$nombre"
+fi
+if ! [[ -f /etc/sysctl.d/11-optimizaciones.conf ]]; then
+	echo -e "El archivo /etc/sysctl.d/11-optimizaciones.conf NO existe""\n" >> /tmp/"$nombre"
+else
+	echo -e "El archivo /etc/sysctl.d/11-optimizaciones.conf existe""\n" >> /tmp/"$nombre"
+fi
+if ! [[ -f /etc/fstab.d/xanadu.fstab ]]; then
+	echo -e "El archivo /etc/fstab.d/xanadu.fstab NO existe""\n" >> /tmp/"$nombre"
+else
+	echo -e "El archivo /etc/fstab.d/xanadu.fstab existe""\n" >> /tmp/"$nombre"
+fi
+if ! [[ -f /etc/tmpfiles.d/xanadu.conf ]]; then
+	echo -e "El archivo /etc/tmpfiles.d/xanadu.conf NO existe""\n" >> /tmp/"$nombre"
+else
+	echo -e "El archivo /etc/tmpfiles.d/xanadu.conf existe""\n" >> /tmp/"$nombre"
+fi
+if ! [[ -f /etc/sysfs.conf ]]; then
+	echo -e "El archivo /etc/sysfs.conf NO existe""\n" >> /tmp/"$nombre"
+else
+	echo -e "El archivo /etc/sysfs.conf existe""\n" >> /tmp/"$nombre"
+fi
+
+echo -e "\n""## modulo cpuid ##""\n" >> /tmp/"$nombre"
+lsmod | grep "cpuid" >> /tmp/"$nombre"
+
+echo -e "\n""## modulo loop ##""\n" >> /tmp/"$nombre"
+lsmod | grep "loop" >> /tmp/"$nombre"
+
+echo -e "\n""## modulo rfkill ##""\n" >> /tmp/"$nombre"
+lsmod | grep "rfkill" >> /tmp/"$nombre"
+
+echo -e "\n""## microcode ##""\n" >> /tmp/"$nombre"
+dmesg | grep "microcode" >> /tmp/"$nombre"
+
+echo -e "\n""## ulatency ##""\n" >> /tmp/"$nombre"
+ulatency tree >> /tmp/"$nombre"
+
+echo -e "\n""## 3D ##""\n" >> /tmp/"$nombre"
+glxinfo | grep "direct" >> /tmp/"$nombre"
+
+echo -e "\n""## conexion ##""\n" >> /tmp/"$nombre"
+ping -c 3 yahoo.com >> /tmp/"$nombre"
+
+clear
+echo -e "\n""El reporte se ha generado en /tmp/"$nombre""
+rm -f /run/$(basename $0).pid
+exit 0
