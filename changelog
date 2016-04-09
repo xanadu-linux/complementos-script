@@ -1,4 +1,16 @@
-commit ae74cc5c7897e86c8023a1f4df75d850b32ddb20 (HEAD, origin/master, origin/HEAD, master)
+commit b4da385e48878ce02c5d45e543f9b6656bde5673 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Sat Apr 9 09:42:50 2016 -0430
+
+    * se agregan los script que faltaban
+
+commit 629d14294ad6fe1c0ccca765448d140f2fdde837 (tag: v0.1)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Tue Apr 5 21:25:14 2016 -0430
+
+    * changelog
+
+commit ae74cc5c7897e86c8023a1f4df75d850b32ddb20
 Author: jose perez <sinfallas@gmail.com>
 Date:   Tue Apr 5 21:24:22 2016 -0430
 
