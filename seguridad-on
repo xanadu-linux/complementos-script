@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+LC_ALL=C
+trap "rm -f /run/$(basename $0).pid; exit" 0 1 2 3 15
+echo "$BASHPID" > /run/$(basename $0).pid
+source /usr/bin/variables
+
+$advertencia --window-icon=/usr/share/icons/lock-close.png --timeout=7 --text="Los servicios: aide, fail2ban y psad se activaran durante el arranque con sus configuraciones por defecto (aumentara dramáticamente el consumo de recursos en su equipo), es necesario que el usuario las modifique de acuerdo a sus necesidades, presione aceptar para continuar."
+if ! [[ -f /root/.seguridad ]]; then
+	sed -i 's/sudo rmmod -f ip_tables ip6_tables iptable_filter iptable_mangle iptable_nat iptable_raw bluetooth rfcomm/sudo modprobe -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police/g' /usr/bin/inicio
+	systemctl enable ntp
+	systemctl enable fail2ban
+	systemctl enable psad
+	aideinit -y -f
+	mv -f -v /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+	psad --sig-update
+	psad -H
+	touch /root/.seguridad
+fi
+$advertencia --window-icon=/usr/share/icons/lock-close.png --timeout=7 --text="Finalizado"
+
+rm -f /run/$(basename $0).pid
+exit 0

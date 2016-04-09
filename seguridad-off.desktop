@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Detener seguridad
+Comment=Detener seguridad
+Icon=/usr/share/icons/lock-open.png
+Exec=gksu '/usr/bin/seguridad-off'
+Terminal=false
+Type=Application
+Categories=GNOME;GTK;System;

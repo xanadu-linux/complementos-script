@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+LC_ALL=C
+trap "rm -f /run/$(basename $0).pid; exit" 0 1 2 3 15
+echo "$BASHPID" > /run/$(basename $0).pid
+source /usr/bin/variables
+
+if [[ -f /root/.seguridad ]]; then	
+	sed -i 's/sudo modprobe -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police/sudo rmmod -f ip_tables ip6_tables iptable_filter iptable_mangle iptable_nat iptable_raw bluetooth rfcomm/g' /usr/bin/inicio
+	systemctl disable ntp
+	systemctl disable fail2ban
+	systemctl disable psad
+	rm -f /root/.seguridad
+else
+	$errores --window-icon=/usr/share/icons/lock-open.png --text="La seguridad NO esta activada."
+fi
+$advertencia --window-icon=/usr/share/icons/lock-close.png --timeout=7 --text="Finalizado"
+
+rm -f /run/$(basename $0).pid
+exit 0
