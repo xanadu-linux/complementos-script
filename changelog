@@ -1,10 +1,22 @@
-commit 99ddd57087b28ed4df9e757b582cd06f4bce1a2a (HEAD, origin/master, origin/HEAD, master)
+commit c5a2dc47b3f305259cb71e066785058b38cf7e2c (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Tue Jul 5 18:32:35 2016 -0400
+
+    * se elimina apt-get clean de la funcion limpiar_1
+
+commit 4d3205bdf2f26e7079a4a7e50e55087da1f2d883
+Author: jose perez <sinfallas@gmail.com>
+Date:   Sun Apr 17 20:17:00 2016 -0430
+
+    * changelog
+
+commit 99ddd57087b28ed4df9e757b582cd06f4bce1a2a
 Author: jose perez <sinfallas@gmail.com>
 Date:   Sun Apr 17 20:16:19 2016 -0430
 
     * zenodo
 
-commit 95a5881ce11f43be17a9c791ea0cdc7186bd52c1
+commit 95a5881ce11f43be17a9c791ea0cdc7186bd52c1 (tag: v0.1.1)
 Author: jose perez <sinfallas@gmail.com>
 Date:   Sat Apr 9 11:33:23 2016 -0430
 
