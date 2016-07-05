@@ -26,7 +26,6 @@ function espera () {
 
 function limpiar_1 () {
 	history -c
-	apt-get clean
 	rm -rf /tmp/*
 	rm -rf /var/tmp/*
 	rm -rf /var/cache/polipo/*
