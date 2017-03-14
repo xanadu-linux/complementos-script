@@ -19,6 +19,9 @@ errores='yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align=fil
 advertencia='yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align=fill --borders=6 --title="ADVERTENCIA"'
 final='yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align=fill --borders=6 --timeout=3 --title="FINALIZADO"'
 progreso='yad --fixed --progress --pulsate --auto-close --skip-taskbar --center'
+TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
+TOR_UID="debian-tor"
+TOR_PORT="9040"
 
 function espera () {
 	sleep 30 | $progreso --progress-text="Iniciando tor, por favor espere" --title="Tor"
@@ -32,6 +35,43 @@ function limpiar_1 () {
 	rm -rf /root/.local/share/Trash/*
 	rm -rf /home/*/.local/share/Trash/*
 	rm -rf /home/*/.cache/*
+	bleachbit -c adobe_reader.cache chromium.cache chromium.current_session chromium.history elinks.history emesene.cache epiphany.cache firefox.url_history flash.cache flash.cookies google_chrome.cache google_chrome.history links2.history opera.cache opera.search_history opera.url_history &> /dev/null
+}
+
+function iptables_clean () {
+	iptables -F
+	iptables -X
+	iptables -Z
+	iptables -t nat -F
+	iptables -t nat -X
+	iptables -t mangle -F
+	iptables -t mangle -X
+	iptables -P INPUT ACCEPT
+	iptables -P FORWARD ACCEPT
+	iptables -P OUTPUT ACCEPT
+}
+
+function iptables_tor () {
+	iptables -t nat -A OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
+	iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 53
+	iptables -t nat -A OUTPUT -p tcp --dport 53 -j REDIRECT --to-ports 53
+	iptables -t nat -A OUTPUT -p udp -m owner --uid-owner $TOR_UID -m udp --dport 53 -j REDIRECT --to-ports 53
+	iptables -t nat -A OUTPUT -p tcp -d 10.192.0.0/10 -j REDIRECT --to-ports $TOR_PORT
+	iptables -t nat -A OUTPUT -p udp -d 10.192.0.0/10 -j REDIRECT --to-ports $TOR_PORT
+	for NET in $TOR_EXCLUDE 127.0.0.0/9 127.128.0.0/10; do
+		iptables -t nat -A OUTPUT -d $NET -j RETURN
+	done
+	iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $TOR_PORT
+	iptables -t nat -A OUTPUT -p udp -j REDIRECT --to-ports $TOR_PORT
+	iptables -t nat -A OUTPUT -p icmp -j REDIRECT --to-ports $TOR_PORT
+	iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+	for NET in $TOR_EXCLUDE 127.0.0.0/8; do
+		iptables -A OUTPUT -d $NET -j ACCEPT
+	done
+	iptables -A OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
+	iptables -A OUTPUT -j REJECT
+	iptables -A INPUT -p udp -j DROP
+	iptables -A OUTPUT -p udp -j DROP
 }
 
 function tor_1 () {
@@ -49,20 +89,16 @@ function tor_1 () {
 		swapoff $i
 	done
 	echo "Se apagan las particiones swap" >> "$lock"
-	killall x-www-browser
+	killall -q x-www-browser chrome dropbox iceweasel skype icedove thunderbird firefox chromium xchat transmission deluge pidgin pidgin.orig
 	limpiar_1
 	echo "Se ejecuta la funcion limpiar" >> "$lock"
 	mv -f /home/"$quien"/.mozilla /home/"$quien"/.mozilla.bak
 	cp -f /etc/iceweasel/profile/prefs.tor /etc/iceweasel/profile/prefs.js
 	echo "Se cambian las configuraciones de iceweasel" >> "$lock"
+	iptables-save > /etc/network/iptables.rules
 	iptables_clean
 	echo "Se limpian las reglas de iptables" >> "$lock"
-	iptables -A INPUT -p udp --sport 53 -j ACCEPT
-	iptables -A INPUT -p udp --dport 53 -j ACCEPT
-	iptables -A OUTPUT -p udp --sport 53 -j ACCEPT
-	iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
-	iptables -A INPUT -p udp -j DROP
-	iptables -A OUTPUT -p udp -j DROP
+	iptables_tor
 	echo "Se bloquea el trafico udp" >> "$lock"
 	systemctl stop ssh
 	systemctl stop ntp
@@ -91,6 +127,8 @@ function tor_0 () {
 	limpiar_1
 	echo "Se ejecuta la funcion limpiar" >> "$lock"
 	iptables_clean
+	iptables-restore < /etc/network/iptables.rules
+	rm -f /etc/network/iptables.rules
 	echo "Se limpian las reglas de iptables" >> "$lock"
 	rm -rf /home/"$quien"/.mozilla
 	mv -f /home/"$quien"/.mozilla.bak /home/"$quien"/.mozilla
@@ -133,19 +171,6 @@ function optimizacion_1 () {
 		adduser "$quien" sambashare
 		touch /root/.optimizado2
 	fi
-}
-
-function iptables_clean () {
-	iptables -F
-	iptables -X
-	iptables -Z
-	iptables -t nat -F
-	iptables -t nat -X
-	iptables -t mangle -F
-	iptables -t mangle -X
-	iptables -P INPUT ACCEPT
-	iptables -P FORWARD ACCEPT
-	iptables -P OUTPUT ACCEPT
 }
 
 function live_check () {
