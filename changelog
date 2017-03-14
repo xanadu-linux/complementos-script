@@ -1,4 +1,16 @@
-commit c5a2dc47b3f305259cb71e066785058b38cf7e2c (HEAD, origin/master, origin/HEAD, master)
+commit a0388f5d35494bba198ad738293cb8a99b7fea98 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Tue Mar 14 00:20:14 2017 -0400
+
+    * se mejoran las funciones relacionadas con tor
+
+commit 51be68bc077060a61c524a11a3fa1c97e1ab7d56
+Author: jose perez <sinfallas@gmail.com>
+Date:   Tue Jul 5 18:32:59 2016 -0400
+
+    * changelog
+
+commit c5a2dc47b3f305259cb71e066785058b38cf7e2c
 Author: jose perez <sinfallas@gmail.com>
 Date:   Tue Jul 5 18:32:35 2016 -0400
 
