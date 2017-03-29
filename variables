@@ -77,7 +77,7 @@ function iptables_tor () {
 function tor_1 () {
 	echo "Comienza el arranque de tor" > "$lock"
 	mkdir -p /var/log/tor
-	chown debian-tor:debian-tor /var/log/tor
+	chown $TOR_UID:$TOR_UID /var/log/tor
 	chmod 765 /var/log/tor
 	if [[ -d /lib/live/mount/rootfs ]]; then
 		echo "#!/usr/bin/env bash" > /etc/cron.hourly/polipoclean
