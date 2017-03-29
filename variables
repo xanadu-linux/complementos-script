@@ -5,8 +5,8 @@ if [[ "$EUID" != "0" ]]; then
 	exit 1
 fi
 lock="/run/tor.lock"
-lock2="/run/i2p.lock"
 lock3="/run/mirouter.lock"
+toripv6="/etc/sysctl.d/70-tor.conf"
 persistencia="/usr/bin/persistencia"
 memoria=$(grep "MemTotal" /proc/meminfo | awk '{print $2}')
 cpu=$(lscpu | grep "MHz" | awk '{print $3}')
@@ -91,10 +91,13 @@ function tor_1 () {
 	echo "Se apagan las particiones swap" >> "$lock"
 	killall -q x-www-browser chrome dropbox iceweasel skype icedove thunderbird firefox chromium xchat transmission deluge pidgin pidgin.orig
 	limpiar_1
+	echo "net.ipv6.conf.all.disable_ipv6 = 1" > "$toripv6"
+	echo "net.ipv6.conf.default.disable_ipv6 = 1" >> "$toripv6"
+	sysctl -p > /dev/null
 	echo "Se ejecuta la funcion limpiar" >> "$lock"
 	mv -f /home/"$quien"/.mozilla /home/"$quien"/.mozilla.bak
-	cp -f /etc/iceweasel/profile/prefs.tor /etc/iceweasel/profile/prefs.js
-	echo "Se cambian las configuraciones de iceweasel" >> "$lock"
+	cp -f /etc/firefox/prefs.tor /etc/firefox/prefs.js
+	echo "Se cambian las configuraciones de firefox" >> "$lock"
 	iptables-save > /etc/network/iptables.rules
 	iptables_clean
 	echo "Se limpian las reglas de iptables" >> "$lock"
@@ -125,6 +128,10 @@ function tor_1 () {
 function tor_0 () {
 	echo "Comienza el proceso para detener tor" >> "$lock"	
 	limpiar_1
+	echo "net.ipv6.conf.all.disable_ipv6 = 0" > "$toripv6"
+	echo "net.ipv6.conf.default.disable_ipv6 = 0" >> "$toripv6"
+	sysctl -p > /dev/null
+	rm -f "$toripv6"
 	echo "Se ejecuta la funcion limpiar" >> "$lock"
 	iptables_clean
 	iptables-restore < /etc/network/iptables.rules
@@ -132,8 +139,8 @@ function tor_0 () {
 	echo "Se limpian las reglas de iptables" >> "$lock"
 	rm -rf /home/"$quien"/.mozilla
 	mv -f /home/"$quien"/.mozilla.bak /home/"$quien"/.mozilla
-	cp -f /etc/iceweasel/profile/prefs.js.ori /etc/iceweasel/profile/prefs.js
-	echo "Se restauran las configuraciones de iceweasel" >> "$lock"
+	cp -f /etc/firefox/prefs.js.ori /etc/firefox/prefs.js
+	echo "Se restauran las configuraciones de firefox" >> "$lock"
 	systemctl stop privoxy
 	echo "Se detiene el demonio privoxy" >> "$lock"
 	systemctl stop polipo
