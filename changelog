@@ -1,4 +1,16 @@
-commit a0388f5d35494bba198ad738293cb8a99b7fea98 (HEAD, origin/master, origin/HEAD, master)
+commit f9bcff564f2c6b54c3046de98362a6d8a320d4ea (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Wed Mar 29 16:34:56 2017 -0400
+
+    * se desactiva el soporte de ipv6 al usar tor
+
+commit 4e65197f982a0ddb30171953af095270e71df190
+Author: jose perez <sinfallas@gmail.com>
+Date:   Tue Mar 14 00:20:36 2017 -0400
+
+    * changelog
+
+commit a0388f5d35494bba198ad738293cb8a99b7fea98
 Author: jose perez <sinfallas@gmail.com>
 Date:   Tue Mar 14 00:20:14 2017 -0400
 
