@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 #los comandos aca listados se ejecutan al cerrar sesion
 LC_ALL=C
-rm -rf /var/cache/polipo/*
-rm -rf /root/.local/share/Trash/*
-rm -rf /home/*/.local/share/Trash/*
-rm -rf /tmp/*
-rm -rf /var/tmp/*
-apt-get clean
+source /usr/bin/variables
+limpiar_1
 exit 0
