@@ -1,10 +1,23 @@
-commit 2539b882529603cd8763633fc2c010e92e92710a (HEAD, master)
+commit a91eb69a17d8700716d53369bd71833eeb3f8206 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Apr 6 11:19:31 2017 -0400
+
+    * se mejora la funcion limpiar en variables
+    * se llama a la funcion limpiar en el script fin para facilitar los futuros cambios
+
+commit 57bf398e44c6ecc9b9e98b5abf4693712066ef7c
+Author: jose perez <sinfallas@gmail.com>
+Date:   Wed Mar 29 17:01:47 2017 -0400
+
+    * changelog
+
+commit 2539b882529603cd8763633fc2c010e92e92710a
 Author: jose perez <sinfallas@gmail.com>
 Date:   Wed Mar 29 16:59:30 2017 -0400
 
     * changelog
 
-commit 51f8487157c58d160389b53d7ad09e92c8eae7c4 (origin/master, origin/HEAD)
+commit 51f8487157c58d160389b53d7ad09e92c8eae7c4
 Author: jose perez <sinfallas@gmail.com>
 Date:   Wed Mar 29 16:59:06 2017 -0400
 
