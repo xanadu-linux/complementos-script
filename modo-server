@@ -15,12 +15,7 @@ case "$1" in
 
 	office)
 		optimizacion_1
-		apt -y purge autopsy chkrootkit wifite wireshark zenmap ethtool fsarchiver yersinia 0trace amap arp-scan gtkorphan tmux gtkhash x11vnc ssvnc filezilla pidgin pidgin-otr transmission axel macchanger-gtk fail2ban iptraf-ng arptables gufw ntp tcptraceroute mtr-tiny wget clonezilla extundelete foremost magicrescue testdisk scalpel hostapd polipo privoxy socat tor tor-arm tsocks torsocks obfs4proxy apt-transport-tor connect-proxy proxychains secure-delete aide-common ophcrack cmospwd psad mat bleachbit lzip lzma lzop
-		$insta playonlinux xanadu-archive-keyring xanadu-repo
-		rm -f /usr/share/applications/Adicionales.desktop
-		rm -f /etc/apt/sources.list.d/kali.list
-		rm -f /etc/apt/sources.list.d/liquorix.list
-		rm -f /etc/apt/sources.list.d/tor.list
+		$insta xanadu-sfw
 		limpiar_1
 		;;
 
