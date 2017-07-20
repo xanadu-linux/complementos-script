@@ -10,6 +10,7 @@ $insta xanadu-repo
 apt -q update
 apt -y full-upgrade
 $insta xanadu-clean
+apt -y purge xanadu-clean
 apt -y autoremove
 apt -y purge $(deborphan --libdevel) $(deborphan --find-config) $(deborphan)
 source /usr/bin/miarranque-mem
