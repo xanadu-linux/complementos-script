@@ -32,7 +32,6 @@ function limpiar_1 () {
 	apt-get clean
 	rm -rf /tmp/*
 	rm -rf /var/tmp/*
-	rm -rf /var/cache/polipo/*
 	rm -rf /root/.local/share/Trash/*
 	rm -rf /home/*/.cache/*
 	rm -rf /home/*/.local/share/Trash/*
@@ -81,12 +80,6 @@ function tor_1 () {
 	mkdir -p /var/log/tor
 	chown $TOR_UID:$TOR_UID /var/log/tor
 	chmod 765 /var/log/tor
-	if [[ -d /lib/live/mount/rootfs ]]; then
-		echo "#!/usr/bin/env bash" > /etc/cron.hourly/polipoclean
-		echo "polipo -x" >> /etc/cron.hourly/polipoclean
-		chmod +x /etc/cron.hourly/polipoclean
-	fi
-	echo "Se crea el script para limpiar polipo" >> "$lock"
 	for i in $miswap; do
 		swapoff $i
 	done
@@ -114,8 +107,6 @@ function tor_1 () {
 	echo "Se detienen servicios innecesarios" >> "$lock"
 	aa-exec tor -f /etc/tor/torrc
 	echo "Se inicia el demonio tor" >> "$lock"
-	systemctl start polipo
-	echo "Se inicia el demonio polipo" >> "$lock"
 	systemctl start privoxy
 	echo "Se inicia el demonio privoxy" >> "$lock"
 	killall dnsmasq
@@ -145,8 +136,6 @@ function tor_0 () {
 	echo "Se restauran las configuraciones de firefox" >> "$lock"
 	systemctl stop privoxy
 	echo "Se detiene el demonio privoxy" >> "$lock"
-	systemctl stop polipo
-	echo "Se detiene el demonio polipo" >> "$lock"
 	killall tor
 	echo "Se detiene el demonio tor" >> "$lock"
 	killall dnsmasq
