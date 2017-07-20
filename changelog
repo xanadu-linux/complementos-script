@@ -1,4 +1,16 @@
-commit a91eb69a17d8700716d53369bd71833eeb3f8206 (HEAD, origin/master, origin/HEAD, master)
+commit 98841639d48349d8a93d37d382215822c2c109ec (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Wed Jul 19 21:21:53 2017 -0400
+
+    * se elimina polipo
+
+commit 195a46973594ff95f6ea41eda3dd523cbef58a59
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Apr 6 11:20:20 2017 -0400
+
+    * changelog
+
+commit a91eb69a17d8700716d53369bd71833eeb3f8206
 Author: jose perez <sinfallas@gmail.com>
 Date:   Thu Apr 6 11:19:31 2017 -0400
 
