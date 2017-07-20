@@ -1,4 +1,16 @@
-commit f4d64d5425e4f8757cd1d5284d9bdda897565827 (HEAD, origin/master, origin/HEAD, master)
+commit 9871307147e50858c9f7aadb095565071e00b6f6 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Jul 20 18:40:50 2017 -0400
+
+    * se actualiza modo-server para usar el paquete xanadu-sfw
+
+commit e5fef23209ad477691f6fb7dc0f4b5c1a30a250d
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Jul 20 18:25:32 2017 -0400
+
+    * changelog
+
+commit f4d64d5425e4f8757cd1d5284d9bdda897565827
 Author: jose perez <sinfallas@gmail.com>
 Date:   Thu Jul 20 18:24:12 2017 -0400
 
