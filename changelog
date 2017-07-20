@@ -1,4 +1,16 @@
-commit df09f698421f740eae9cb7fc1bf79c041e8d9349 (HEAD, origin/master, origin/HEAD, master)
+commit f4d64d5425e4f8757cd1d5284d9bdda897565827 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Jul 20 18:24:12 2017 -0400
+
+    * se optimiza modo-server para usar el paquete xanadu-headless
+
+commit 01057e54d84d67da88687e03de22d935c1d95856
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Jul 20 18:10:17 2017 -0400
+
+    * changelog
+
+commit df09f698421f740eae9cb7fc1bf79c041e8d9349
 Author: jose perez <sinfallas@gmail.com>
 Date:   Thu Jul 20 18:09:42 2017 -0400
 
