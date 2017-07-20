@@ -9,6 +9,9 @@ apt -q update
 $insta xanadu-repo
 apt -q update
 apt -y full-upgrade
+$insta xanadu-clean
+apt -y autoremove
+apt -y purge $(deborphan --libdevel) $(deborphan --find-config) $(deborphan)
 source /usr/bin/miarranque-mem
 limpiar_1
 rm -f /run/$(basename $0).pid
