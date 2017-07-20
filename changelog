@@ -1,4 +1,16 @@
-commit 98841639d48349d8a93d37d382215822c2c109ec (HEAD, origin/master, origin/HEAD, master)
+commit df09f698421f740eae9cb7fc1bf79c041e8d9349 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Jul 20 18:09:42 2017 -0400
+
+    * se agrega la opcion de instalar el pquete de limpieza y de eliminar paquetes huerfanos
+
+commit a1fa64ce4d1654e8de9602bd6b2e270be1832e8c
+Author: jose perez <sinfallas@gmail.com>
+Date:   Wed Jul 19 21:22:17 2017 -0400
+
+    * changelog
+
+commit 98841639d48349d8a93d37d382215822c2c109ec
 Author: jose perez <sinfallas@gmail.com>
 Date:   Wed Jul 19 21:21:53 2017 -0400
 
