@@ -1,4 +1,17 @@
-commit 78b1e5979061b42d140b657d7f01d723feddac1e (HEAD, origin/master, origin/HEAD, master)
+commit 29d410f77ce5d97b3e900223e4aae81a83e65077 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Mon Jul 24 21:18:02 2017 -0400
+
+    * se modifican los script de seguridad
+    * se limpian los script inicio y fin
+
+commit 145f3b3f194e35852d9bee76cf6bf38547dd56eb
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Jul 20 19:27:51 2017 -0400
+
+    * changelog
+
+commit 78b1e5979061b42d140b657d7f01d723feddac1e
 Author: jose perez <sinfallas@gmail.com>
 Date:   Thu Jul 20 19:27:22 2017 -0400
 
