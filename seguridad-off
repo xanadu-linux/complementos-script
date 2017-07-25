@@ -1,18 +1,55 @@
 #!/usr/bin/env bash
+# Made by Sinfallas <sinfallas@yahoo.com>
+# Licence: GPL-2
 LC_ALL=C
+
 trap "rm -f /run/$(basename $0).pid; exit" 0 1 2 3 15
 echo "$BASHPID" > /run/$(basename $0).pid
 source /usr/bin/variables
 
-if [[ -f /root/.seguridad ]]; then	
-	sed -i 's/sudo modprobe -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police/sudo rmmod -f ip_tables ip6_tables iptable_filter iptable_mangle iptable_nat iptable_raw bluetooth rfcomm/g' /usr/bin/inicio
-	systemctl disable ntp
-	systemctl disable fail2ban
+function psad_off () {
 	systemctl disable psad
-	rm -f /root/.seguridad
-else
-	$errores --window-icon=/usr/share/icons/lock-open.png --text="La seguridad NO esta activada."
+	systemctl stop psad
+}
+
+function fail_off () {
+	systemctl disable fail2ban
+	systemctl stop fail2ban
+}
+
+function ntp_off () {
+	systemctl disable ntp
+	systemctl stop ntp
+}
+
+opts=$(yad --window-icon=/usr/share/icons/lock-close.png --center --list --title="Desactivar elementos de seguridad" --text="Marque las opciones que usted quiere desactivar." --checklist --column "Marque" --column "Num" --column "Opcion" --width=590 --height=525 --button="Aceptar":0 --button="Salir":1\
+  FALSE 01 "Desctivar Fail2ban" \
+  FALSE 02 "Desctivar PSAD" \
+  FALSE 03 "Desctivar NTP" \
+  TRUE 04 "Desctivar todos")
+
+if [[ $? = 1 ]]; then
+	exit 0
 fi
+
+if $(echo $opts | grep -q 01); then
+	fail_off
+fi
+
+if $(echo $opts | grep -q 02); then
+	psad_off
+fi
+
+if $(echo $opts | grep -q 03); then
+	ntp_off
+fi
+
+if $(echo $opts | grep -q 04); then
+	psad_off
+	fail_off
+	ntp_off
+fi
+
 $advertencia --window-icon=/usr/share/icons/lock-close.png --timeout=7 --text="Finalizado"
 
 rm -f /run/$(basename $0).pid

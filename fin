@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#los comandos aca listados se ejecutan al cerrar sesion
 LC_ALL=C
 source /usr/bin/variables
 limpiar_1
