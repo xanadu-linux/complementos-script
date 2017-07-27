@@ -1,0 +1,345 @@
+#!/usr/bin/env bash
+# Made by Sinfallas <sinfallas@yahoo.com>
+# Licence: GPL-2
+LC_ALL=C
+source /usr/bin/variables
+rootyad
+
+trap "rm -f /run/$(basename $0).pid; exit" 0 1 2 3 15
+echo "$BASHPID" > /run/$(basename $0).pid
+
+lock="/run/tor.lock"
+lock3="/run/mirouter.lock"
+toripv6="/etc/sysctl.d/70-tor.conf"
+persistencia="/usr/bin/persistencia"
+TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
+TOR_UID="debian-tor"
+TOR_PORT="9040"
+cantidadram='--window-icon=/usr/share/icons/post-install.png --text="Debe tener un equipo con 2 Gb de RAM o mas para instalar este software."'
+seguro='--window-icon=/usr/share/icons/post-install.png --text="¿Esta seguro de querer instalar este software?"'
+bienvenida="Bienvenido a Xanadu GNU/Linux $(cat /etc/os-release | grep 'VERSION=' | cut -c 10-14)"
+textoseguridad="Marque las opciones que usted quiere activar. Los servicios se activaran con sus configuraciones por defecto, es necesario que el usuario las modifique de acuerdo a sus necesidades."
+textoadicionales="texto de adicionales"
+textopost="texto de post-instalacion"
+textotor="tor"
+textomain="Escoja la pestaña para ver las opciones"
+wifitor="wifi tor"
+pest1="Bienvenida"
+pest2="Adicionales"
+pest3="Seguridad"
+pest4="Tor"
+pest5="Wifi Tor"
+num="12346"
+titulo="Complementario"
+mimain="yad --center --notebook --height=560 --width=665 --image-on-top --title="$titulo" --key=$num --button="Aceptar:0" --button="Salir:1""
+mitab="yad --plug=$num"
+
+function progress_2 () {
+	$progreso --progress-text="Instalando Software, esto proceso puede tomar varios minutos, por favor espere" --title="Instalando"
+}
+
+function progress_limpiar_2 () {
+	$progreso --progress-text="Realizando limpieza" --title="LIMPIEZA"
+}
+
+function headers_1 () {
+	if [[ $(arch) = x86_64 ]] || [[ $(arch) = amd64 ]]; then
+		$update
+		$insta linux-headers-siduction-amd64
+	else
+		$update
+		$insta linux-headers-siduction-686
+	fi
+}
+
+function apparmor_1 () {
+	$update
+	$insta lightdm-gtk-greeter-settings grub-customizer icedove camorama
+	if (( $memoria > 4096000 )); then
+		$insta preload
+	fi
+}
+
+function espera () {
+	sleep 30 | $progreso --progress-text="Iniciando tor, por favor espere" --title="Tor"
+}
+
+function iptables_tor () {
+	iptables -t nat -A OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
+	iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 53
+	iptables -t nat -A OUTPUT -p tcp --dport 53 -j REDIRECT --to-ports 53
+	iptables -t nat -A OUTPUT -p udp -m owner --uid-owner $TOR_UID -m udp --dport 53 -j REDIRECT --to-ports 53
+	iptables -t nat -A OUTPUT -p tcp -d 10.192.0.0/10 -j REDIRECT --to-ports $TOR_PORT
+	iptables -t nat -A OUTPUT -p udp -d 10.192.0.0/10 -j REDIRECT --to-ports $TOR_PORT
+	for NET in $TOR_EXCLUDE 127.0.0.0/9 127.128.0.0/10; do
+		iptables -t nat -A OUTPUT -d $NET -j RETURN
+	done
+	iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $TOR_PORT
+	iptables -t nat -A OUTPUT -p udp -j REDIRECT --to-ports $TOR_PORT
+	iptables -t nat -A OUTPUT -p icmp -j REDIRECT --to-ports $TOR_PORT
+	iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+	for NET in $TOR_EXCLUDE 127.0.0.0/8; do
+		iptables -A OUTPUT -d $NET -j ACCEPT
+	done
+	iptables -A OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
+	iptables -A OUTPUT -j REJECT
+	iptables -A INPUT -p udp -j DROP
+	iptables -A OUTPUT -p udp -j DROP
+}
+
+function tor_1 () {
+	echo "Comienza el arranque de tor" > "$lock"
+	mkdir -p /var/log/tor
+	chown $TOR_UID:$TOR_UID /var/log/tor
+	chmod 765 /var/log/tor
+	for i in $miswap; do
+		swapoff $i
+	done
+	echo "Se apagan las particiones swap" >> "$lock"
+	killall -q x-www-browser chrome dropbox iceweasel skype icedove thunderbird firefox chromium xchat transmission deluge pidgin pidgin.orig
+	limpiar_1
+	echo "net.ipv6.conf.all.disable_ipv6 = 1" > "$toripv6"
+	echo "net.ipv6.conf.default.disable_ipv6 = 1" >> "$toripv6"
+	sysctl -p > /dev/null
+	echo "Se ejecuta la funcion limpiar" >> "$lock"
+	mv -f /home/"$quien"/.mozilla /home/"$quien"/.mozilla.bak
+	cp -f /etc/firefox/prefs.tor /etc/firefox/prefs.js
+	echo "Se cambian las configuraciones de firefox" >> "$lock"
+	iptables-save > /etc/network/iptables.rules
+	iptables_clean
+	echo "Se limpian las reglas de iptables" >> "$lock"
+	iptables_tor
+	echo "Se bloquea el trafico udp" >> "$lock"
+	systemctl stop ssh
+	systemctl stop ntp
+	systemctl stop cups
+	systemctl stop cups-browsed
+	systemctl stop minissdpd
+	systemctl stop exim4
+	echo "Se detienen servicios innecesarios" >> "$lock"
+	aa-exec tor -f /etc/tor/torrc
+	echo "Se inicia el demonio tor" >> "$lock"
+	systemctl start privoxy
+	echo "Se inicia el demonio privoxy" >> "$lock"
+	killall dnsmasq
+	dnsmasq
+	echo "Se reinicia el demonio dnsmasq" >> "$lock"
+	tsocks -on
+	echo "Se inicia tsocks" >> "$lock"
+	systemctl start memlockd
+	echo "Se inicia memlockd" >> "$lock"
+}
+
+function tor_0 () {
+	echo "Comienza el proceso para detener tor" >> "$lock"	
+	limpiar_1
+	echo "net.ipv6.conf.all.disable_ipv6 = 0" > "$toripv6"
+	echo "net.ipv6.conf.default.disable_ipv6 = 0" >> "$toripv6"
+	sysctl -p > /dev/null
+	rm -f "$toripv6"
+	echo "Se ejecuta la funcion limpiar" >> "$lock"
+	iptables_clean
+	iptables-restore < /etc/network/iptables.rules
+	rm -f /etc/network/iptables.rules
+	echo "Se limpian las reglas de iptables" >> "$lock"
+	rm -rf /home/"$quien"/.mozilla
+	mv -f /home/"$quien"/.mozilla.bak /home/"$quien"/.mozilla
+	cp -f /etc/firefox/prefs.js.ori /etc/firefox/prefs.js
+	echo "Se restauran las configuraciones de firefox" >> "$lock"
+	systemctl stop privoxy
+	echo "Se detiene el demonio privoxy" >> "$lock"
+	killall tor
+	echo "Se detiene el demonio tor" >> "$lock"
+	killall dnsmasq
+	dnsmasq
+	echo "Se reinicia el demonio dnsmasq" >> "$lock"
+	systemctl stop memlockd
+	echo "Se detiene memlockd" >> "$lock"
+	tsocks -off
+	echo "Se detiene tsocks" >> "$lock"
+	rm -f /etc/cron.hourly/polipoclean
+	rm -f /run/tor/tor.pid
+	rm -f /run/polipo.pid
+	rm -f /run/privoxy.pid
+	rm -f /run/memlockd.pid
+	echo "Se eliminan los pid restantes" >> "$lock"
+	for j in $miswap; do
+		swapon -p 25 -f $j
+	done
+	echo "Se activan las particiones swap" >> "$lock"
+	rm -f "$lock"
+}
+
+#if ! [[ -f /root/.optimizado2 ]]; then
+#	if (( $memoria > 4096000 )); then
+#		for i in $quien; do
+#			echo "tmpfs /home/$i/.cache tmpfs noatime,noexec,nosuid,async,nodev,rw 0 0" >> /etc/fstab
+#		done
+#	fi
+#	chage -M 183 "$quien"
+#	adduser "$quien" sambashare
+#	touch /root/.optimizado2
+#fi
+
+if (( $memoria < 512000 )); then
+	$advertencia --text="Se ha detectado poca RAM en su ordenador, se recomienda instalar el paquete xanadu-low para obtener ciertos programas mas adecuados a su equipo."
+fi
+
+# agregar swapfilescan
+
+# agregar clamav
+
+# fusionar passgen
+
+# agregar reparaciones
+
+# agregar repdisk
+
+# agregar securegen
+
+if ! [[ -d /lib/live/mount/rootfs ]]; then
+	$mitab --tabnum=1 --text="$bienvenida"  &\
+	$mitab --tabnum=2 --separator='\n' --text="$textoadicionales" --list --column="Acciones" "Gestionar Firewall" "Como activar la persistencia" "Activar persistencia automaticamente" "Reparar Hora" "Fillzero" "Iniciar Compton" "Detener Compton" "Ddclone" &\
+	$mitab --tabnum=3 --separator='\n' --text="$textopost" --list --column="Acciones" "Instalar Recomendados" "Instalar KDE" "Instalar GNOME" "Instalar XFCE" "Instalar Enlightenment" "Instalar Xanadu-Accessibility" "Instalar WINE" "Instalar driver ATI" "Instalar driver NVIDIA" "Instalar Xanadu-low" "Instalar HEADERS" "Instalar HPLIP-GUI" "Instalar Laptop-Mode-Tools" "Actualizar" &\
+	$mitab --tabnum=4 --separator='\n' --text="$textoseguridad" --list --checklist --column="Marque" --column="Num" --column="Opcion" FALSE 01 "Activar AIDE" FALSE 02 "Activar Fail2ban" FALSE 03 "Activar PSAD" FALSE 04 "Activar NTP" FALSE 05 "Activar todos" &\
+	$mitab --tabnum=5 --text="$textotor" &\
+	$mitab --tabnum=6 --text="$wifitor" &\
+	mio=$($mimain --tab="$pest1" --tab="$pest2" --tab="Post-install" --tab="$pest3" --tab="$pest4" --tab="$pest5" --text="$textomain")
+else
+	$mitab --tabnum=1 --text="$bienvenida"  &\
+	$mitab --tabnum=2 --separator='\n' --text="$textoadicionales" --list --column="Acciones" "Gestionar Firewall" "Como activar la persistencia" "Activar persistencia automaticamente" "Reparar Hora" "Fillzero" "Iniciar Compton" "Detener Compton" "Ddclone" &\
+	$mitab --tabnum=3 --separator='\n' --text="$textoseguridad" --list --checklist --column="Marque" --column="Num" --column="Opcion" FALSE 01 "Activar AIDE" FALSE 02 "Activar Fail2ban" FALSE 03 "Activar PSAD" FALSE 04 "Activar NTP" FALSE 05 "Activar todos" &\
+	$mitab --tabnum=4 --text="$textotor" &\
+	$mitab --tabnum=5 --text="$wifitor" &\
+	mio=$($mimain --tab="$pest1" --tab="$pest2" --tab="$pest3" --tab="$pest4" --tab="$pest5" --text="$textomain")
+fi
+
+if [ "$mio" = "Como activar la persistencia" ]; then
+	zenity --text-info --title="Persistencia" --filename=$persistencia
+	if [[ $? == 0 ]] ; then
+		echo 1 > /dev/null
+	else
+		exit 0
+	fi
+
+elif [ "$mio" = "Activar persistencia automaticamente" ]; then
+	source /usr/bin/mipersistencia
+
+elif [ "$mio" = "Reparar Hora" ]; then
+	$advertencia --text="Esta opción tratara de reparar la forma en la que se muestra la hora en su ordenador."
+	hwclock --systohc
+	systemctl restart ntp
+
+elif [ "$mio" = "Iniciar Compton" ]; then
+	$advertencia --text="Esta opción activara el gestor de composición compton aumentando dramáticamente el consumo de recursos en su equipo."
+	/usr/bin/compton --config /etc/compton.conf -b
+	
+elif [ "$mio" = "Detener Compton" ]; then
+	killall compton
+	$final --text="Compton se ha detenido."
+
+elif [ "$mio" = "Gestionar Firewall" ]; then
+	gufw
+
+elif [ "$mio" = "Fillzero" ]; then
+	source /usr/bin/fillzero
+
+elif [ "$mio" = "Ddclone" ]; then
+	source /usr/bin/ddclone
+
+elif [ "$mio" = "Instalar KDE" ]; then
+	if (( $memoria > 2048000 )); then	
+		$update
+		$insta xanadu-kde | progress_2
+		limpiar_1 | progress_limpiar_2
+	else
+		$errores $cantidadram
+	fi
+
+elif [ "$mio" = "Instalar GNOME" ]; then
+	if (( $memoria > 2048000 )); then
+		$update
+		$insta xanadu-gnome | progress_2
+		limpiar_1 | progress_limpiar_2
+	else
+		$errores $cantidadram
+	fi
+
+elif [ "$mio" = "Instalar XFCE" ]; then
+	$update
+	$insta xanadu-xfce | progress_2
+	limpiar_1 | progress_limpiar_2
+
+elif [ "$mio" = "Instalar Enlightenment" ]; then
+	$update
+	$insta xanadu-enlightenment | progress_2
+	limpiar_1 | progress_limpiar_2
+
+elif [ "$mio" = "Instalar Xanadu-Accessibility" ]; then
+	if (( $memoria > 2048000 )); then
+		$update
+		$insta xanadu-accessibility | progress_2
+		limpiar_1 | progress_limpiar_2
+	else
+		$errores $cantidadram
+	fi
+
+elif [ "$mio" = "Instalar WINE" ]; then
+	if (( $memoria > 2048000 )); then
+		$update
+		$insta playonlinux | progress_2
+		limpiar_1 | progress_limpiar_2
+	else
+		$errores $cantidadram
+	fi
+
+elif [ "$mio" = "Instalar driver ATI" ]; then
+	$update
+	$insta fglrx-atieventsd fglrx-control fglrx-driver fglrx-modules-dkms radeontool | progress_2
+	limpiar_1 | progress_limpiar_2
+
+elif [ "$mio" = "Instalar driver NVIDIA" ]; then
+	$update
+	$insta nvclock nvidia-alternative nvidia-glx nvidia-installer-cleanup nvidia-kernel-common nvidia-kernel-dkms nvidia-settings nvidia-support nvidia-vdpau-driver nvidia-detect nvidia-xconfig | progress_2
+	limpiar_1 | progress_limpiar_2
+
+elif [ "$mio" = "Instalar Xanadu-low" ]; then
+	$update
+	$insta xanadu-low | progress_2
+	limpiar_1 | progress_limpiar_2
+
+elif [ "$mio" = "Instalar HEADERS" ]; then
+	headers_1 | progress_2
+	limpiar_1 | progress_limpiar_2
+
+elif [ "$mio" = "Instalar Recomendados" ]; then
+	apparmor_1 | progress_2
+	if [[ $(lscpu | grep ID | awk '{print $4}') = GenuineIntel ]];then
+		$insta thermald
+	fi
+	limpiar_1 | progress_limpiar_2
+
+elif [ "$mio" = "Instalar HPLIP-GUI" ]; then
+	$update
+	$insta hplip-gui | progress_2
+	limpiar_1 | progress_limpiar_2
+
+elif [ "$mio" = "Instalar Laptop-Mode-Tools" ]; then
+	if $advertencia --text="Este software solo debe ser instalado en una laptop ¿desea continuar?"; then
+		$update
+		$insta laptop-mode-tools | progress_2
+		systemctl enable laptop-mode
+		limpiar_1 | progress_limpiar_2
+	else
+		source $0
+	fi
+
+elif [ "$mio" = "Actualizar" ]; then
+	xterm -e /usr/bin/actualizar
+
+else
+	echo 1 > /dev/null
+fi
+
+rm -f /run/$(basename $0).pid
+exit 0

@@ -1,13 +1,5 @@
 #!/usr/bin/env bash
 LC_ALL=C
-if [[ "$EUID" != "0" ]]; then
-	yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align=fill --borders=6 --timeout=3 --title="ERROR" --text="ERROR: Debes ser root."
-	exit 1
-fi
-lock="/run/tor.lock"
-lock3="/run/mirouter.lock"
-toripv6="/etc/sysctl.d/70-tor.conf"
-persistencia="/usr/bin/persistencia"
 memoria=$(grep "MemTotal" /proc/meminfo | awk '{print $2}')
 cpu=$(lscpu | grep "MHz" | awk '{print $3}')
 miswap=$(fdisk -l | grep "swap" | awk '{print $1}')
@@ -19,12 +11,19 @@ errores='yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align=fil
 advertencia='yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align=fill --borders=6 --title="ADVERTENCIA"'
 final='yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align=fill --borders=6 --timeout=3 --title="FINALIZADO"'
 progreso='yad --fixed --progress --pulsate --auto-close --skip-taskbar --center'
-TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
-TOR_UID="debian-tor"
-TOR_PORT="9040"
 
-function espera () {
-	sleep 30 | $progreso --progress-text="Iniciando tor, por favor espere" --title="Tor"
+function rootyad () {
+	if [[ "$EUID" != "0" ]]; then
+		yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align=fill --borders=6 --timeout=3 --title="ERROR" --text="ERROR: Debes ser root."
+		exit 1
+	fi
+}
+
+function rootcli () {
+	if [[ "$EUID" != "0" ]]; then
+		echo -e "\e[00;31mERROR: DEBES SER ROOT\e[00m"
+		exit 1
+	fi
 }
 
 function limpiar_1 () {
@@ -50,125 +49,6 @@ function iptables_clean () {
 	iptables -P INPUT ACCEPT
 	iptables -P FORWARD ACCEPT
 	iptables -P OUTPUT ACCEPT
-}
-
-function iptables_tor () {
-	iptables -t nat -A OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
-	iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 53
-	iptables -t nat -A OUTPUT -p tcp --dport 53 -j REDIRECT --to-ports 53
-	iptables -t nat -A OUTPUT -p udp -m owner --uid-owner $TOR_UID -m udp --dport 53 -j REDIRECT --to-ports 53
-	iptables -t nat -A OUTPUT -p tcp -d 10.192.0.0/10 -j REDIRECT --to-ports $TOR_PORT
-	iptables -t nat -A OUTPUT -p udp -d 10.192.0.0/10 -j REDIRECT --to-ports $TOR_PORT
-	for NET in $TOR_EXCLUDE 127.0.0.0/9 127.128.0.0/10; do
-		iptables -t nat -A OUTPUT -d $NET -j RETURN
-	done
-	iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $TOR_PORT
-	iptables -t nat -A OUTPUT -p udp -j REDIRECT --to-ports $TOR_PORT
-	iptables -t nat -A OUTPUT -p icmp -j REDIRECT --to-ports $TOR_PORT
-	iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-	for NET in $TOR_EXCLUDE 127.0.0.0/8; do
-		iptables -A OUTPUT -d $NET -j ACCEPT
-	done
-	iptables -A OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
-	iptables -A OUTPUT -j REJECT
-	iptables -A INPUT -p udp -j DROP
-	iptables -A OUTPUT -p udp -j DROP
-}
-
-function tor_1 () {
-	echo "Comienza el arranque de tor" > "$lock"
-	mkdir -p /var/log/tor
-	chown $TOR_UID:$TOR_UID /var/log/tor
-	chmod 765 /var/log/tor
-	for i in $miswap; do
-		swapoff $i
-	done
-	echo "Se apagan las particiones swap" >> "$lock"
-	killall -q x-www-browser chrome dropbox iceweasel skype icedove thunderbird firefox chromium xchat transmission deluge pidgin pidgin.orig
-	limpiar_1
-	echo "net.ipv6.conf.all.disable_ipv6 = 1" > "$toripv6"
-	echo "net.ipv6.conf.default.disable_ipv6 = 1" >> "$toripv6"
-	sysctl -p > /dev/null
-	echo "Se ejecuta la funcion limpiar" >> "$lock"
-	mv -f /home/"$quien"/.mozilla /home/"$quien"/.mozilla.bak
-	cp -f /etc/firefox/prefs.tor /etc/firefox/prefs.js
-	echo "Se cambian las configuraciones de firefox" >> "$lock"
-	iptables-save > /etc/network/iptables.rules
-	iptables_clean
-	echo "Se limpian las reglas de iptables" >> "$lock"
-	iptables_tor
-	echo "Se bloquea el trafico udp" >> "$lock"
-	systemctl stop ssh
-	systemctl stop ntp
-	systemctl stop cups
-	systemctl stop cups-browsed
-	systemctl stop minissdpd
-	systemctl stop exim4
-	echo "Se detienen servicios innecesarios" >> "$lock"
-	aa-exec tor -f /etc/tor/torrc
-	echo "Se inicia el demonio tor" >> "$lock"
-	systemctl start privoxy
-	echo "Se inicia el demonio privoxy" >> "$lock"
-	killall dnsmasq
-	dnsmasq
-	echo "Se reinicia el demonio dnsmasq" >> "$lock"
-	tsocks -on
-	echo "Se inicia tsocks" >> "$lock"
-	systemctl start memlockd
-	echo "Se inicia memlockd" >> "$lock"
-}
-
-function tor_0 () {
-	echo "Comienza el proceso para detener tor" >> "$lock"	
-	limpiar_1
-	echo "net.ipv6.conf.all.disable_ipv6 = 0" > "$toripv6"
-	echo "net.ipv6.conf.default.disable_ipv6 = 0" >> "$toripv6"
-	sysctl -p > /dev/null
-	rm -f "$toripv6"
-	echo "Se ejecuta la funcion limpiar" >> "$lock"
-	iptables_clean
-	iptables-restore < /etc/network/iptables.rules
-	rm -f /etc/network/iptables.rules
-	echo "Se limpian las reglas de iptables" >> "$lock"
-	rm -rf /home/"$quien"/.mozilla
-	mv -f /home/"$quien"/.mozilla.bak /home/"$quien"/.mozilla
-	cp -f /etc/firefox/prefs.js.ori /etc/firefox/prefs.js
-	echo "Se restauran las configuraciones de firefox" >> "$lock"
-	systemctl stop privoxy
-	echo "Se detiene el demonio privoxy" >> "$lock"
-	killall tor
-	echo "Se detiene el demonio tor" >> "$lock"
-	killall dnsmasq
-	dnsmasq
-	echo "Se reinicia el demonio dnsmasq" >> "$lock"
-	systemctl stop memlockd
-	echo "Se detiene memlockd" >> "$lock"
-	tsocks -off
-	echo "Se detiene tsocks" >> "$lock"
-	rm -f /etc/cron.hourly/polipoclean
-	rm -f /run/tor/tor.pid
-	rm -f /run/polipo.pid
-	rm -f /run/privoxy.pid
-	rm -f /run/memlockd.pid
-	echo "Se eliminan los pid restantes" >> "$lock"
-	for j in $miswap; do
-		swapon -p 25 -f $j
-	done
-	echo "Se activan las particiones swap" >> "$lock"
-	rm -f "$lock"
-}
-
-function optimizacion_1 () {
-	if ! [[ -f /root/.optimizado2 ]]; then
-		if (( $memoria > 4096000 )); then
-			for i in $quien; do
-				echo "tmpfs /home/$i/.cache tmpfs noatime,noexec,nosuid,async,nodev,rw 0 0" >> /etc/fstab
-			done
-		fi
-		chage -M 183 "$quien"
-		adduser "$quien" sambashare
-		touch /root/.optimizado2
-	fi
 }
 
 function live_check () {
