@@ -1,4 +1,17 @@
-commit 29d410f77ce5d97b3e900223e4aae81a83e65077 (HEAD, origin/master, origin/HEAD, master)
+commit 1765852cedae1f6cad8f6da26f746b0125402607 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Wed Jul 26 23:24:04 2017 -0400
+
+    * se crea el script coplementario para fusionar varios script
+    * se limpia variables
+
+commit c938c539943e648d7c2a61754b6259b2cf058acb
+Author: jose perez <sinfallas@gmail.com>
+Date:   Mon Jul 24 21:19:08 2017 -0400
+
+    * changelog
+
+commit 29d410f77ce5d97b3e900223e4aae81a83e65077
 Author: jose perez <sinfallas@gmail.com>
 Date:   Mon Jul 24 21:18:02 2017 -0400
 
