@@ -1,4 +1,20 @@
-commit 1765852cedae1f6cad8f6da26f746b0125402607 (HEAD, origin/master, origin/HEAD, master)
+commit 1908e82893fb523c8d8b7af15e3feec81fd73534 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Sun Jul 30 14:28:05 2017 -0400
+
+    * se eliminan los script innecesarios
+    * se trasladan las funciones principales de los demas script al script complementario
+    * se empiezan a organizar las funciones del script complementario
+    * se elimina codigo duplicado
+    * se modifico el script variables para mantener codigo usado por otros script
+
+commit 987f22865054780bcf52ff9aaa1befda3f714dea
+Author: jose perez <sinfallas@gmail.com>
+Date:   Wed Jul 26 23:24:38 2017 -0400
+
+    * changelog
+
+commit 1765852cedae1f6cad8f6da26f746b0125402607
 Author: jose perez <sinfallas@gmail.com>
 Date:   Wed Jul 26 23:24:04 2017 -0400
 
