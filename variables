@@ -12,7 +12,15 @@ advertencia='yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align
 final='yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align=fill --borders=6 --timeout=3 --title="FINALIZADO"'
 progreso='yad --fixed --progress --pulsate --auto-close --skip-taskbar --center'
 
+function yadinstall () {
+	if ! [[ -f /usr/bin/yad ]]; then
+		echo "ERROR: Yad NO se encuentra instalado" > /var/log/xanadu-error.log
+		exit 1
+	fi
+}
+
 function rootyad () {
+	yadinstall
 	if [[ "$EUID" != "0" ]]; then
 		yad --skip-taskbar --button=ACEPTAR:0 --fixed --center --text-align=fill --borders=6 --timeout=3 --title="ERROR" --text="ERROR: Debes ser root."
 		exit 1
@@ -22,6 +30,20 @@ function rootyad () {
 function rootcli () {
 	if [[ "$EUID" != "0" ]]; then
 		echo -e "\e[00;31mERROR: DEBES SER ROOT\e[00m"
+		exit 1
+	fi
+}
+
+function live_check () {
+	if [[ -d /lib/live/mount/rootfs ]]; then
+		$errores --text="Este programa no se puede ejecutar en modo live."
+		exit 1
+	fi
+}
+
+function nolive_check () {
+	if ! [[ -d /lib/live/mount/rootfs ]]; then
+		$errores --text="Este programa debe ejecutarse en modo live."
 		exit 1
 	fi
 }
@@ -51,16 +73,15 @@ function iptables_clean () {
 	iptables -P OUTPUT ACCEPT
 }
 
-function live_check () {
-	if [[ -d /lib/live/mount/rootfs ]]; then
-		$errores --text="Este programa no se puede ejecutar en modo live."
-		exit 1
-	fi
-}
-
-function nolive_check () {
-	if ! [[ -d /lib/live/mount/rootfs ]]; then
-		$errores --text="Este programa debe ejecutarse en modo live."
-		exit 1
+function optimizacion_1 () {
+	if ! [[ -f /root/.optimizado2 ]]; then
+		if (( $memoria > 4096000 )); then
+			for i in $quien; do
+				echo "tmpfs /home/$i/.cache tmpfs noatime,noexec,nosuid,async,nodev,rw 0 0" >> /etc/fstab
+			done
+		fi
+		chage -M 183 "$quien"
+		adduser "$quien" sambashare
+		touch /root/.optimizado2
 	fi
 }

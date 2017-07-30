@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-LC_ALL=C
-if [[ -f /usr/bin/yad ]]; then
-	source adicionales-yad
-else
-	echo "ERROR: Yad NO se encuentra instalado" > /var/log/adicionales.log
-fi
-exit 0

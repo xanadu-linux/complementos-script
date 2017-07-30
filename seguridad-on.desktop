@@ -1,9 +1,0 @@
-[Desktop Entry]
-Encoding=UTF-8
-Name=Iniciar seguridad
-Comment=Iniciar seguridad
-Icon=/usr/share/icons/lock-close.png
-Exec=gksu '/usr/bin/seguridad-on'
-Terminal=false
-Type=Application
-Categories=GNOME;GTK;System;
