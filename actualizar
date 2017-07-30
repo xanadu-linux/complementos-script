@@ -3,6 +3,7 @@ LC_ALL=C
 trap "rm -f /run/$(basename $0).pid; exit" 0 1 2 3 15
 echo "$BASHPID" > /run/$(basename $0).pid
 source /usr/bin/variables
+rootcli
 live_check
 optimizacion_1
 apt -q update
