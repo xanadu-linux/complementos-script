@@ -1,4 +1,18 @@
-commit cf296d45d43bf30e3a770ee5e130c14fd6b778af (HEAD, origin/master, origin/HEAD, master)
+commit 171bf6ecf66574bd9eb5f3abcb6083eb2f8d7358 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Sun Jul 30 22:29:25 2017 -0400
+
+    * se reordenan variables
+    * se corrigen errores
+    * se completan algunas funciones
+
+commit e6e67633654f8fc5bbabbed37beeb3dc1a01eacc
+Author: jose perez <sinfallas@gmail.com>
+Date:   Sun Jul 30 14:36:17 2017 -0400
+
+    * changelog
+
+commit cf296d45d43bf30e3a770ee5e130c14fd6b778af
 Author: jose perez <sinfallas@gmail.com>
 Date:   Sun Jul 30 14:35:56 2017 -0400
 
