@@ -37,7 +37,7 @@ pest3="Seguridad"
 pest4="Tor"
 pest5="Wifi Tor"
 num="12346"
-titulo="Complementario"
+titulo="Complementos"
 mimain="yad --sticky --fixed --center --notebook --height=560 --width=665 --image-on-top --title="$titulo" --key=$num --button="Aceptar:0" --button="Salir:1""
 mitab="yad --plug=$num"
 ad1="Gestionar Firewall"
@@ -62,24 +62,46 @@ pos11="Instalar HEADERS"
 pos12="Instalar HPLIP-GUI"
 pos13="Instalar Laptop-Mode-Tools"
 pos14="Actualizar"
+pos15="Adaptar para uso de oficina"
+pos16="Eliminar la interfaz grafica para usar headless"
 seg1="Activar AIDE"
 seg2="Activar Fail2ban"
 seg3="Activar PSAD"
 seg4="Activar NTP"
 seg5="Activar todos"
+donde="/mnt/miusb"
+genkey="/tmp/genkey"
+genlisto="/tmp/listo"
+adver='yad --skip-taskbar --fixed --text-align=fill --borders=6 --center --window-icon=error --title="Advertencia" --button="Continuar":0 --button="Salir":1 --text="¿Esta seguro de continuar? Esta operacion no podra revertirse."'
+borraprog='--title="Borrando" --progress-text="Borrando el disco, esto proceso puede tomar varias horas, por favor espere."'
 
-# poner el if que detecta si hay menos de 512 como una notificacion
 if (( $memoria < 512000 )); then
 	$advertencia --text="Se ha detectado poca RAM en su ordenador, se recomienda instalar el paquete xanadu-low para obtener ciertos programas mas adecuados a su equipo."
 fi
+
+######## funciones graficas
+
+function mensaje () {
+	$final --text="Borrado finalizado."
+}
+
+function mensaje_2 () {
+	$final --window-icon=/usr/share/icons/lock-close.png --text="Finalizado"
+}
+
+function espera () {
+	sleep 30 | $progreso --progress-text="Iniciando tor, por favor espere" --title="Tor"
+}
 
 function progress_2 () {
 	$progreso --progress-text="Instalando Software, esto proceso puede tomar varios minutos, por favor espere" --title="Instalando"
 }
 
 function progress_limpiar_2 () {
-	$progreso --progress-text="Realizando limpieza" --title="LIMPIEZA"
+	$progreso --progress-text="Realizando limpieza" --title="Limpieza"
 }
+
+########## funciones de proceso
 
 function headers_1 () {
 	if [[ $(arch) = x86_64 ]] || [[ $(arch) = amd64 ]]; then
@@ -97,10 +119,6 @@ function apparmor_1 () {
 	if (( $memoria > 4096000 )); then
 		$insta preload
 	fi
-}
-
-function espera () {
-	sleep 30 | $progreso --progress-text="Iniciando tor, por favor espere" --title="Tor"
 }
 
 function iptables_tor () {
@@ -167,16 +185,17 @@ function tor_1 () {
 	echo "Se inicia tsocks" >> "$lock"
 	systemctl start memlockd
 	echo "Se inicia memlockd" >> "$lock"
-
-if [[ -f "$lock" ]]; then
-	$errores --window-icon=/usr/share/icons/tor-icon.png --text="Tor ya se esta ejecutando."
-else
-	$advertencia --window-icon=/usr/share/icons/tor-icon.png --timeout=10 --text="TOR ayuda a proteger su informacion al navegar por la red, sin embargo puede dejar rastros en su equipo. Espere mientras se inicia TOR se le notificara al completarse la tarea."
-	tor_1
-	espera
-	yad --window-icon=/usr/share/icons/tor-icon.png --timeout=30 --skip-taskbar --button=ACEPTAR:1 --title="FINALIZADO" --fixed --center --text-align=fill --borders=6 --text="Inicio completado. Si utiliza un navegador diferente de Firefox, introduzca la siguiente configuración de PROXY en su navegador: localhost (o el ip del equipo) puerto 8118 (9151 para socks) y localhost (o el ip del equipo) puerto 9050 para las otras aplicaciones que usen socks."
-	firefox https://check.torproject.org/
-fi
+	###############
+	if [[ -f "$lock" ]]; then
+		$errores --window-icon=/usr/share/icons/tor-icon.png --text="Tor ya se esta ejecutando."
+		exit 1
+	else
+		$advertencia --window-icon=/usr/share/icons/tor-icon.png --timeout=10 --text="TOR ayuda a proteger su informacion al navegar por la red, sin embargo puede dejar rastros en su equipo. Espere mientras se inicia TOR se le notificara al completarse la tarea."
+		tor_1
+		espera
+		yad --window-icon=/usr/share/icons/tor-icon.png --timeout=30 --skip-taskbar --button=ACEPTAR:1 --title="Finalizado" --fixed --center --text-align=fill --borders=6 --text="Inicio completado. Si utiliza un navegador diferente de Firefox, introduzca la siguiente configuración de PROXY en su navegador: localhost (o el ip del equipo) puerto 8118 (9151 para socks) y localhost (o el ip del equipo) puerto 9050 para las otras aplicaciones que usen socks."
+		firefox https://check.torproject.org/
+	fi
 }
 
 function tor_0 () {
@@ -215,13 +234,104 @@ function tor_0 () {
 	done
 	echo "Se activan las particiones swap" >> "$lock"
 	rm -f "$lock"
+	################
+	if [[ -f "$lock" ]]; then
+		tor_0
+		$final --window-icon=/usr/share/icons/tor-icon.png --text="Servicio finalizado exitosamente."
+	else
+		$errores --window-icon=/usr/share/icons/tor-icon.png --text="Tor no se esta ejecutando."
+		exit 1
+	fi
+}
 
-if [[ -f "$lock" ]]; then
-	tor_0
-	$final --window-icon=/usr/share/icons/tor-icon.png --text="Servicio finalizado exitosamente."
-else
-	$errores --window-icon=/usr/share/icons/tor-icon.png --text="Tor no se esta ejecutando."
-fi
+function routeron () {
+	if [[ -f "$lock3" ]]; then
+		$errores --window-icon=/usr/share/icons/wifi-on.png --timeout=30 --text="El Router WiFi Tor ya se esta ejecutando con los siguientes parametros: SSID: $(grep -n 'ssid=' /etc/hostapd/hostapd.conf | grep 6 | cut -c 8-18)\nPassword: $(grep 'wpa_passphrase' /etc/hostapd/hostapd.conf | cut -c 16-26)"
+		exit 1
+	else
+		yad --window-icon=/usr/share/icons/wifi-on.png --skip-taskbar --fixed --center --text-align=fill --borders=6 --button=Aceptar:0 --button=Cancelar:1 --title="ADVERTENCIA" --text="Esta funcion es EXPERIMENTAL, puede cambiar algunos parametros del router en /etc/xanadurouter.conf. Se recomienda no usar la pc durante la ejecucion del router wifi, presione aceptar para continuar."
+		if [[ $? = 0 ]]; then
+			echo "Comienza el arranque del router tor" > "$lock3"
+			source /etc/xanadurouter.conf
+			cp -f /etc/network/interfaces /etc/network/interfaces.old
+			cp -f /etc/network/interfaces.ori /etc/network/interfaces
+			cp -f /etc/dnsmasq.conf.ori /etc/dnsmasq.conf
+			cp -f /etc/hostapd/hostapd.conf.ori /etc/hostapd/hostapd.conf
+			echo "Se copian las configuraciones de interfaces, dnsmasq y hostapd" >> "$lock3"
+			service network-manager stop
+			echo "Se detiene el servicio network-manager" >> "$lock3"
+			macchanger -r "$red1"
+			echo "Se cambia la mac de la tarjeta de red" >> "$lock3"
+			echo -e "\nauto" $red1 >> /etc/network/interfaces
+			echo "iface" $red1 "inet dhcp" >> /etc/network/interfaces
+			echo -e "\nauto" $red2 >> /etc/network/interfaces
+			echo "allow-hotplug" $red2 >> /etc/network/interfaces
+			echo "iface" $red2 "inet static" >> /etc/network/interfaces
+			echo "address 192.168.10.1" >> /etc/network/interfaces
+			echo "netmask 255.255.255.0" >> /etc/network/interfaces
+			mv -f /etc/network/if-pre-up.d/linux-wlan-ng-pre-up /etc/network/if-pre-up.d/linux-wlan-ng-pre-up.old
+			echo "Se cambia las configuraciones de la red" >> "$lock3"
+			ifup "$red1"
+			ifup "$red2"
+			echo "Se inician las interfaces de red" >> "$lock3"
+			echo "interface="$red2 >> /etc/dnsmasq.conf
+			echo "except-interface="$red1 >> /etc/dnsmasq.conf
+			echo "listen-address=192.168.10.1" >> /etc/dnsmasq.conf
+			echo "listen-address=127.0.0.1" >> /etc/dnsmasq.conf
+			echo "dhcp-range=192.168.10.50,192.168.10.150,255.255.255.0,12h" >> /etc/dnsmasq.conf
+			echo "dhcp-host=AB:CD:EF:FF:11:22,net:known" >> /etc/dnsmasq.conf
+			#echo "dhcp-ignore=tag:!known" >> /etc/dnsmasq.conf
+			echo "Se agregan configuraciones adicionales a dnsmasq" >> "$lock3"
+			tor_1
+			echo "Se ejecuta tor" >> "$lock3"
+			espera
+			echo "Se ejecuta la funcion espera" >> "$lock3"
+			sed -i 's_xanadu_'$(date | md5sum | cut -c 1-10)'_g' /etc/hostapd/hostapd.conf
+			sed -i 's_1234567890_'$(date | md5sum | cut -c 1-10)'_g' /etc/hostapd/hostapd.conf
+			hostapd -B /etc/hostapd/hostapd.conf -P /run/hostapd.pid
+			echo "Se cambia la configuracion de hostapd" >> "$lock3"
+			#modprobe -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police
+			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 1:21 --syn -j REDIRECT --to-ports $TOR_PORT
+			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 23:79 --syn -j REDIRECT --to-ports $TOR_PORT
+			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 80 --syn -j REDIRECT --to-ports 8118
+			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 81:442 --syn -j REDIRECT --to-ports $TOR_PORT
+			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 443 --syn -j REDIRECT --to-ports 8118
+			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 444:5900 --syn -j REDIRECT --to-ports $TOR_PORT
+			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 5902:65535 --syn -j REDIRECT --to-ports $TOR_PORT
+			echo "Se agregan reglas a iptables" >> "$lock3"
+			$advertencia --window-icon=/usr/share/icons/wifi-on.png --timeout=30 --text="SSID: $(grep -n 'ssid=' /etc/hostapd/hostapd.conf | grep 6 | cut -c 8-18)\nPassword: $(grep 'wpa_passphrase' /etc/hostapd/hostapd.conf | cut -c 16-26)"
+		else
+			exit 0
+		fi
+	fi
+}
+
+function routeroff () {
+	if [[ -f "$lock3" ]]; then
+		source /etc/xanadurouter.conf
+		killall hostapd
+		echo "Se detiene el proceso hostapd" >> "$lock3"
+		rm -f /run/hostapd.pid
+		ifdown "$red1"
+		ifdown "$red2"
+		echo "Se detienen las interfaces de red" >> "$lock3"
+			mv -f /etc/network/if-pre-up.d/linux-wlan-ng-pre-up.old /etc/network/if-pre-up.d/linux-wlan-ng-pre-up
+		tor_0
+		macchanger -p "$red1"
+		echo "Se restaura la mac" >> "$lock3"
+		cp -f /etc/network/interfaces.old /etc/network/interfaces
+		cp -f /etc/hostapd/hostapd.conf.ori /etc/hostapd/hostapd.conf
+		cp -f /etc/dnsmasq.conf.ori /etc/dnsmasq.conf
+		echo "Se restauran las configuraciones de interfaces, hostapd y dnsmasq" >> "$lock3"
+		#rmmod -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police
+		service network-manager start
+		echo "Se reinicia network-manager" >> "$lock3"
+		rm -f "$lock3"
+		$final --window-icon=/usr/share/icons/wifi-off.png --text="Servicio finalizado exitosamente."
+	else
+		$errores --window-icon=/usr/share/icons/wifi-off.png --text="El Router WiFi Tor no se esta ejecutando."
+		exit 1
+	fi
 }
 
 function xclamav () {
@@ -243,91 +353,79 @@ function xclamav () {
 	clamtk
 }
 
-
-function borrar_1 () {
-	cat /dev/zero > "$borrar"
-	cat /dev/urandom > "$borrar"
-	shred -fz -n 5 "$borrar"
-}
-
-function borrar_2 () {
-	cat /dev/zero > "$borrar"
-	cat /dev/urandom > "$borrar"
-}
-
-function borrar_3 () {
-	cat /dev/zero > "$borrar"
-}
-
-
-# esta funcion seguramente esta duplicada
-function mensaje () {
-	$final --text="Borrado finalizado."
-}
-
 function xfillzero () {
-	if yad --skip-taskbar --fixed --center --text-align=fill --borders=6 --title="NOTIFICACION" --text="Este programa le permitira borrar de forma segura toda la informacion de un dispositivo externo. Para borrar el disco duro local utilice el script DESTRUIR"; then
+	if yad --skip-taskbar --fixed --center --text-align=fill --borders=6 --title="Notificacion" --text="Este programa le permitira borrar de forma segura toda la informacion de un dispositivo externo. Para borrar el disco duro local utilice el script DESTRUIR"; then
 		borrar=$(fdisk -l | grep "Disco" | sed '/zram/d' | sed '/loop/d' | awk '{print $2}' | sed 's/.$//g' | yad --center --no-click --list --title="Lista de dispositivos" --text="Seleccione el dispositivo que desea borrar." --separator="" --column 'Dispositivo' --height 380 --width 150 --button="ACEPTAR":0)
 
 		if [[ -z "$borrar" ]]; then
 			yad --center --window-icon=error --title=Error --button="Ir atras":0 --button="Salir":1 --text="No selecciono nada. Debe escoger un dispositivo."
 			if [[ $? = 0 ]]; then
-				source $0
+				xfillzero
 			else
 				exit 1
 			fi
 		fi
 
+		function borrar_1 () {
+			cat /dev/zero > "$borrar"
+			cat /dev/urandom > "$borrar"
+			shred -fz -n 5 "$borrar"
+		}
+
+		function borrar_2 () {
+			cat /dev/zero > "$borrar"
+			cat /dev/urandom > "$borrar"
+		}
+
+		function borrar_3 () {
+			cat /dev/zero > "$borrar"
+		}
+
 		modo=$(yad --sticky --fixed --center --width=360 --height=450 --window-icon=/usr/share/icons/post-install.png --text="Seleccione el modo de borrado para el dispositivo" --no-click --list --title="Tipo de borrado" --column=Acciones "Seguro: zero, urandom, shred" "Medio: zero, urandom" "Rapido: zero")
 
 		if [ "$modo" = "Seguro: zero, urandom, shred|" ]; then
-			yad --center --window-icon=error --title=Advertencia --button="Continuar":0 --button="Salir":1 --text="¿Esta seguro de continuar? Esta operacion no podra revertirse."
+			$adver
 			if [[ $? = 0 ]]; then
-				borrar_1 | $progreso --title="Borrando" --progress-text="Borrando el disco, esto proceso puede tomar varias horas, por favor espere."
+				borrar_1 | $progreso $borraprog
 				mensaje
 			else
 				exit 1
 			fi
 
 		elif [ "$modo" = "Medio: zero, urandom|" ]; then
-			yad --center --window-icon=error --title=Advertencia --button="Continuar":0 --button="Salir":1 --text="¿Esta seguro de continuar? Esta operacion no podra revertirse."
+			$adver
 			if [[ $? = 0 ]]; then
-				borrar_2 | $progreso --title="Borrando" --progress-text="Borrando el disco, esto proceso puede tomar varias horas, por favor espere."
+				borrar_2 | $progreso $borraprog
 				mensaje
 			else
 				exit 1
 			fi	
 
 		elif [ "$modo" = "Rapido: zero|" ]; then
-			yad --center --window-icon=error --title=Advertencia --button="Continuar":0 --button="Salir":1 --text="¿Esta seguro de continuar? Esta operacion no podra revertirse."
+			$adver
 			if [[ $? = 0 ]]; then
-				borrar_3 | $progreso --title="Borrando" --progress-text="Borrando el disco, esto proceso puede tomar varias horas, por favor espere."
+				borrar_3 | $progreso $borraprog
 				mensaje
 			else
 				exit 1
 			fi
 
 		else
-			echo 1 > /dev/null
+			$null
 		fi
 	else
-		echo 1 > /dev/null
+		$null
 	fi
 }
 
 function xpersistencia () {
-	if ! [[ -d /lib/live/mount/rootfs ]]; then
-		"$errores" --text="Este programa no puede ejecutarse desde una instalacion en un disco duro."
-		exit 1
-	fi
-
-	donde="/mnt/miusb"
+	nolive_check
 	$miyad --timeout=5 --title="Notificacion" --text="Este procedimiento activara la persistencia para el directorio /home; La memoria usb solo debe contener la particion del sistema operativo."
 	dispositivo=$(fdisk -l | grep "Disco" | grep -v "loop" | grep -v "zram" | awk '{print $2}' | sed 's/.$//g' | yad --center --no-click --list --title="Seleccione dispositivo" --text="Seleccione el dispositivo donde copio el contenido de la imagen iso." --separator="" --column 'Dispositivo' --height 380 --width 150 --button="ACEPTAR":0)
 	if [[ -z "$dispositivo" ]]; then
 		$errores --button="Ir atras":0 --button="Salir":1 --text="No selecciono nada. Debe seleccionar un dispositivo."
 		if [[ $? = 0 ]]; then
-			source $0
+			xpersistencia
 		else
 			exit 0
 		fi
@@ -474,32 +572,7 @@ function xrepdisk () {
 	            	echo "USO: $(basename $0) {badblocks|e2fsck|fsck.ext4} /dev/sdx"
 			;;
 
-esac
-}
-
-function xserver () {
-# No se debe ejecutar en modo live
-	case "$1" in
-		minimal)
-			optimizacion_1
-			$insta xanadu-headless
-			apt -y autoremove
-			apt -y purge $(deborphan --libdevel) $(deborphan --find-config) $(deborphan)
-			limpiar_1
-			;;
-
-		office)
-			optimizacion_1
-			$insta xanadu-sfw
-			limpiar_1
-			;;
-
-		*)
-			echo "Este script adapta una instalacion de Xanadu GNU/Linux para hacerla"
-			echo "apta para su uso en oficinas o en entornos headless..."
-			echo "USO: $(basename $0) {minimal|office}"
-			;;
-esac
+	esac
 }
 
 function aide_on () {
@@ -509,10 +582,15 @@ function aide_on () {
 
 function psad_on () {
 	systemctl enable psad
-	sed -i 's_HOSTNAME                    xanadu;_'HOSTNAME                    $(hostname);'_g' /etc/psad/psad.conf
+	sed -i 's_HOSTNAME                    xanadu;_HOSTNAME                    $(hostname);_g' /etc/psad/psad.conf
 	systemctl start psad
 	psad --sig-update
 	psad -H
+}
+
+function psad_off () {
+	systemctl disable psad
+	systemctl stop psad
 }
 
 function fail_on () {
@@ -520,18 +598,14 @@ function fail_on () {
 	systemctl start fail2ban
 }
 
-function ntp_on () {
-	systemctl enable ntp
-	systemctl start ntp
-}
-function psad_off () {
-	systemctl disable psad
-	systemctl stop psad
-}
-
 function fail_off () {
 	systemctl disable fail2ban
 	systemctl stop fail2ban
+}
+
+function ntp_on () {
+	systemctl enable ntp
+	systemctl start ntp
 }
 
 function ntp_off () {
@@ -568,10 +642,11 @@ function xsegoff () {
 		ntp_off
 	fi
 
-	$advertencia --window-icon=/usr/share/icons/lock-close.png --timeout=7 --text="Finalizado"
+	mensaje_2
 }
 
 function xsegon () {
+	# las opciones de opts para yad estan duplicadas y podrian ponerse en una variable
 	opts=$(yad --window-icon=/usr/share/icons/lock-close.png --center --list --title="Activar elementos de seguridad" --text="Marque las opciones que usted quiere activar. Los servicios se activaran con sus configuraciones por defecto es necesario que el usuario las modifique de acuerdo a sus necesidades." --checklist --column "Marque" --column "Num" --column "Opcion" --width=590 --height=525 --button="Aceptar":0 --button="Salir":1\
   FALSE 01 "Activar AIDE" \
   FALSE 02 "Activar Fail2ban" \
@@ -606,213 +681,192 @@ function xsegon () {
 		ntp_on
 	fi
 
-	$advertencia --window-icon=/usr/share/icons/lock-close.png --timeout=7 --text="Finalizado"
+	mensaje_2
 }
-
-
-
-function limpiardd_1 () {
-	for i in $(fdisk -l "$disco" | grep "/dev" | grep -v "Disco" | awk '{print $1}'); do
-		umount -f $i
-		e2fsck -yf $i
-	done
-}
-
-function midd_1 () {
-	usb2=$(echo $usb"1")
-	umount -f "$usb2"
-	mkdir -p /media/usb
-	mount -t auto "$usb2" /media/usb
-	dd if="$disco" of=/media/usb/imagen.raw
-	md5sum -b /media/usb/imagen.raw /media/usb/imagen.md5
-	umount -f /media/usb
-}
-
 
 function xddclone () {
-
-disco=$(fdisk -l | grep "Disco" | awk '{print $2}' | sed 's/.$//g' | yad --center --no-click --list --title="Disco" --text="Seleccione el disco que desea clonar." --separator="" --column 'Dispositivo' --height 380 --width 150 --button="ACEPTAR":0)
-if [[ -z "$disco" ]]; then
-	yad --center --window-icon=error --title="Error" --button="Ir atras":0 --button="Salir":1 --text="No selecciono nada. Debe escoger un disco."
-	if [[ $? = 0 ]]; then
-		source $0
-	else
-		exit 1
+	disco=$(fdisk -l | grep "Disco" | awk '{print $2}' | sed 's/.$//g' | yad --center --no-click --list --title="Disco" --text="Seleccione el disco que desea clonar." --separator="" --column 'Dispositivo' --height 380 --width 150 --button="ACEPTAR":0)
+	if [[ -z "$disco" ]]; then
+		yad --center --window-icon=error --title="Error" --button="Ir atras":0 --button="Salir":1 --text="No selecciono nada. Debe escoger un disco."
+		if [[ $? = 0 ]]; then
+			xddclone
+		else
+			exit 1
+		fi
 	fi
-fi
 
-usb=$(fdisk -l | grep "Disco" | grep -v "loop" | grep -v "zram" | awk '{print $2}' | sed 's/.$//g' | yad --center --no-click --list --title="Seleccione dispositivo" --text="Seleccione el dispositivo donde copiara la imagen del disco." --separator="" --column 'Dispositivo' --height 380 --width 150 --button="ACEPTAR":0)
-if [[ -z "$usb" ]]; then
-	yad --center --window-icon=error --title="Error" --button="Ir atras":0 --button="Salir":1 --text="No selecciono nada. Debe escoger un dispositivo."
-	if [[ $? = 0 ]]; then
-		source $0
-	else
-		exit 1
+	usb=$(fdisk -l | grep "Disco" | grep -v "loop" | grep -v "zram" | awk '{print $2}' | sed 's/.$//g' | yad --center --no-click --list --title="Seleccione dispositivo" --text="Seleccione el dispositivo donde copiara la imagen del disco." --separator="" --column 'Dispositivo' --height 380 --width 150 --button="ACEPTAR":0)
+	if [[ -z "$usb" ]]; then
+		yad --center --window-icon=error --title="Error" --button="Ir atras":0 --button="Salir":1 --text="No selecciono nada. Debe escoger un dispositivo."
+		if [[ $? = 0 ]]; then
+			xddclone
+		else
+			exit 1
+		fi
 	fi
-fi
 
-limpiardd_1 | "$progreso" --progress-text="Revisando el disco, esto proceso puede tomar varios minutos, por favor espere" --title="Revision"
-midd_1 | "$progreso" --progress-text="Creando la imagen del disco, esto proceso puede tomar varias horas, por favor espere" --title="Creando Imagen"
+	function limpiardd_1 () {
+		for i in $(fdisk -l "$disco" | grep "/dev" | grep -v "Disco" | awk '{print $1}'); do
+			umount -f $i
+			e2fsck -yf $i
+		done
+	}
 
-"$final" --text="El proceso de creacion de la imagen de disco se ha finalizado."
+	function midd_1 () {
+		usb2=$(echo $usb"1")
+		umount -f "$usb2"
+		mkdir -p /media/usb
+		mount -t auto "$usb2" /media/usb
+		dd if="$disco" of=/media/usb/imagen.raw
+		md5sum -b /media/usb/imagen.raw /media/usb/imagen.md5
+		umount -f /media/usb
+	}
+
+	limpiardd_1 | "$progreso" --progress-text="Revisando el disco, esto proceso puede tomar varios minutos, por favor espere" --title="Revision"
+	midd_1 | "$progreso" --progress-text="Creando la imagen del disco, esto proceso puede tomar varias horas, por favor espere" --title="Creando Imagen"
+	$final --text="El proceso de creacion de la imagen de disco se ha finalizado."
 }
 
 function xswapfilescan () {
+	yad --center --text-align=fill --borders=6 --title="Swapfile Scan" --button="Crear archivo swap":0 --button="Buscar archivos swap":1 --button="Seleccionar la ubicacion del archivo swap":2 --button="Salir":3 --text="Seleccione la accion que desea realizar"
+	mode="$?"
 
-yad --center --text-align=fill --borders=6 --title="Swapfile Scan" --button="Crear archivo swap":0 --button="Buscar archivos swap":1 --button="Seleccionar la ubicacion del archivo swap":2 --button="Salir":3 --text="Seleccione la accion que desea realizar"
-
-mode="$?"
-
-case $mode in
-	0)
-		$advertencia --text="Seleccione la carpeta donde desea crear el archivo swap."
-		ubicacion=$(yad --file-selection --height 380 --width 500)
-		if [[ -z "$ubicacion" ]]; then
-			$errores --button="Ir atras":0 --button="Salir":1 --text="No selecciono nada. Debe seleccionar una carpeta."
-			if [[ $? = 0 ]]; then
-				source $0
-			else
-				exit 0
+	case $mode in
+		0)
+			$advertencia --text="Seleccione la carpeta donde desea crear el archivo swap."
+			ubicacion=$(yad --file-selection --height 380 --width 500)
+			if [[ -z "$ubicacion" ]]; then
+				$errores --button="Ir atras":0 --button="Salir":1 --text="No selecciono nada. Debe seleccionar una carpeta."
+				if [[ $? = 0 ]]; then
+					xswapfilescan
+				else
+					exit 0
+				fi
 			fi
-		fi
-		peso=$(yad --width=400 --center --text-align=fill --borders=6 --title="Swapfile Scan" --text="Introduzca la cantidad en Megabytes que desea asignar al archivo swap" --form --field="cantidad" --button="Aceptar":0 | sed 's/.$//g')
-		if [[ -z "$peso" ]]; then
-			$errores --button="Ir atras":0 --button="Salir":1 --text="No introdujo una cantidad."
-			if [[ $? = 0 ]]; then
-				source /usr/bin/swapfilescan
-			else
-				exit 0
+			peso=$(yad --width=400 --center --text-align=fill --borders=6 --title="Swapfile Scan" --text="Introduzca la cantidad en Megabytes que desea asignar al archivo swap" --form --field="cantidad" --button="Aceptar":0 | sed 's/.$//g')
+			if [[ -z "$peso" ]]; then
+				$errores --button="Ir atras":0 --button="Salir":1 --text="No introdujo una cantidad."
+				if [[ $? = 0 ]]; then
+					source /usr/bin/swapfilescan
+				else
+					exit 0
+				fi
 			fi
-		fi
-		dd if=/dev/zero of="$ubicacion"/swapfile.swp bs=1M count=$peso
-		chown root:root "$ubicacion"/swapfile.swp
-		chmod 0600 "$ubicacion"/swapfile.swp
-		mkswap "$ubicacion"/swapfile.swp
-		$final --text="Finalizado."
-		;;
+			dd if=/dev/zero of="$ubicacion"/swapfile.swp bs=1M count=$peso
+			chown root:root "$ubicacion"/swapfile.swp
+			chmod 0600 "$ubicacion"/swapfile.swp
+			mkswap "$ubicacion"/swapfile.swp
+			mensaje_2
+			;;
 
-	1)
-		contar=0
-		for i in $(find /media/user/ -type f -name "swapfile.swp"); do
-			let contar=$(($contar+1))
-			losetup /dev/loop$contar $i
-			mkswap /dev/loop$contar
-			swapon -p 30 -f /dev/loop$contar
-		done
-		$final --text="Finalizado."
-		;;
+		1)
+			contar=0
+			for i in $(find /media/user/ -type f -name "swapfile.swp"); do
+				let contar=$(($contar+1))
+				losetup /dev/loop$contar $i
+				mkswap /dev/loop$contar
+				swapon -p 30 -f /dev/loop$contar
+			done
+			mensaje_2
+			;;
 
-	2)
-		dispositivo3=(yad --file-selection --height 380 --width 500)
-		losetup /dev/loop9 $dispositivo3
-		mkswap /dev/loop9
-		swapon -p 30 -f /dev/loop9
-		$final --text="Finalizado."
-		;;
+		2)
+			dispositivo3=(yad --file-selection --height 380 --width 500)
+			losetup /dev/loop9 $dispositivo3
+			mkswap /dev/loop9
+			swapon -p 30 -f /dev/loop9
+			mensaje_2
+			;;
 
-	3)
-		exit 0
-		;;
+		3)
+			exit 0
+			;;
 
-esac
-
+	esac
 }
 
-function routeroff () {
+function xsecuregen () {
+	function mensaje_3 () {
+		echo "USO: ./securegen nombre apellido su@correo.com clave"
+		exit 1
+	}
 
-if [[ -f "$lock3" ]]; then
-	source /etc/xanadurouter.conf
-	killall hostapd
-	echo "Se detiene el proceso hostapd" >> "$lock3"
-	rm -f /run/hostapd.pid
-	ifdown "$red1"
-	ifdown "$red2"
-	echo "Se detienen las interfaces de red" >> "$lock3"
-	mv -f /etc/network/if-pre-up.d/linux-wlan-ng-pre-up.old /etc/network/if-pre-up.d/linux-wlan-ng-pre-up
-	tor_0
-	macchanger -p "$red1"
-	echo "Se restaura la mac" >> "$lock3"
-	cp -f /etc/network/interfaces.old /etc/network/interfaces
-	cp -f /etc/hostapd/hostapd.conf.ori /etc/hostapd/hostapd.conf
-	cp -f /etc/dnsmasq.conf.ori /etc/dnsmasq.conf
-	echo "Se restauran las configuraciones de interfaces, hostapd y dnsmasq" >> "$lock3"
-	echo "Se limpian las reglas de iptables " >> "$lock3"
-	rmmod -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police
-	service network-manager start
-	echo "Se reinicia network-manager" >> "$lock3"
-	rm -f "$lock3"
-	$final --window-icon=/usr/share/icons/wifi-off.png --text="Servicio finalizado exitosamente."
-else
-	$errores --window-icon=/usr/share/icons/wifi-off.png --text="El Router WiFi Tor no se esta ejecutando."
-fi
+	# no debe tener root
 
-}
-
-
-
-function routeron () {
-
-if [[ -f "$lock3" ]]; then
-	$errores --window-icon=/usr/share/icons/wifi-on.png --timeout=30 --text="El Router WiFi Tor ya se esta ejecutando con los siguientes parametros: SSID: $(grep -n 'ssid=' /etc/hostapd/hostapd.conf | grep 6 | cut -c 8-18)\nPassword: $(grep 'wpa_passphrase' /etc/hostapd/hostapd.conf | cut -c 16-26)"
-else
-	yad --window-icon=/usr/share/icons/wifi-on.png --skip-taskbar --fixed --center --text-align=fill --borders=6 --button=Aceptar:0 --button=Cancelar:1 --title="ADVERTENCIA" --text="Esta funcion es EXPERIMENTAL, puede cambiar algunos parametros del router en /etc/xanadurouter.conf. Se recomienda no usar la pc durante la ejecucion del router wifi, presione aceptar para continuar."
-	if [[ $? = 0 ]]; then
-		echo "Comienza el arranque del router tor" > "$lock3"
-		source /etc/xanadurouter.conf
-		cp -f /etc/network/interfaces /etc/network/interfaces.old
-		cp -f /etc/network/interfaces.ori /etc/network/interfaces
-		cp -f /etc/dnsmasq.conf.ori /etc/dnsmasq.conf
-		cp -f /etc/hostapd/hostapd.conf.ori /etc/hostapd/hostapd.conf
-		echo "Se copian las configuraciones de interfaces, dnsmasq y hostapd" >> "$lock3"
-		service network-manager stop
-		echo "Se detiene el servicio network-manager" >> "$lock3"
-		macchanger -r "$red1"
-		echo "Se cambia la mac de la tarjeta de red" >> "$lock3"
-		echo -e "\nauto" $red1 >> /etc/network/interfaces
-		echo "iface" $red1 "inet dhcp" >> /etc/network/interfaces
-		echo -e "\nauto" $red2 >> /etc/network/interfaces
-		echo "allow-hotplug" $red2 >> /etc/network/interfaces
-		echo "iface" $red2 "inet static" >> /etc/network/interfaces
-		echo "address 192.168.10.1" >> /etc/network/interfaces
-		echo "netmask 255.255.255.0" >> /etc/network/interfaces
-		mv -f /etc/network/if-pre-up.d/linux-wlan-ng-pre-up /etc/network/if-pre-up.d/linux-wlan-ng-pre-up.old
-		echo "Se cambia las configuraciones de la red" >> "$lock3"
-		ifup "$red1"
-		ifup "$red2"
-		echo "Se inician las interfaces de red" >> "$lock3"
-		echo "interface="$red2 >> /etc/dnsmasq.conf
-		echo "except-interface="$red1 >> /etc/dnsmasq.conf
-		echo "listen-address=192.168.10.1" >> /etc/dnsmasq.conf
-		echo "listen-address=127.0.0.1" >> /etc/dnsmasq.conf
-		echo "dhcp-range=192.168.10.50,192.168.10.150,255.255.255.0,12h" >> /etc/dnsmasq.conf
-		echo "dhcp-host=AB:CD:EF:FF:11:22,net:known" >> /etc/dnsmasq.conf
-		#echo "dhcp-ignore=tag:!known" >> /etc/dnsmasq.conf
-		echo "Se agregan configuraciones adicionales a dnsmasq" >> "$lock3"
-		tor_1
-		espera
-		echo "Se ejecuta la funcion espera" >> "$lock3"
-		sed -i 's_xanadu_'$(date | md5sum | cut -c 1-10)'_g' /etc/hostapd/hostapd.conf
-		sed -i 's_1234567890_'$(date | md5sum | cut -c 1-10)'_g' /etc/hostapd/hostapd.conf
-		hostapd -B /etc/hostapd/hostapd.conf -P /run/hostapd.pid
-		echo "Se cambia la configuracion de hostapd" >> "$lock3"
-		modprobe -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police
-		iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 1:21 --syn -j REDIRECT --to-ports $TOR_PORT
-		iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 23:79 --syn -j REDIRECT --to-ports $TOR_PORT
-		iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 80 --syn -j REDIRECT --to-ports 8118
-		iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 81:442 --syn -j REDIRECT --to-ports $TOR_PORT
-		iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 443 --syn -j REDIRECT --to-ports 8118
-		iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 444:5900 --syn -j REDIRECT --to-ports $TOR_PORT
-		iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 5902:65535 --syn -j REDIRECT --to-ports $TOR_PORT
-		echo "Se agregan reglas a iptables" >> "$lock3"
-		$advertencia --window-icon=/usr/share/icons/wifi-on.png --timeout=30 --text="SSID: $(grep -n 'ssid=' /etc/hostapd/hostapd.conf | grep 6 | cut -c 8-18)\nPassword: $(grep 'wpa_passphrase' /etc/hostapd/hostapd.conf | cut -c 16-26)"
-	else
-		exit 0
+	if [[ -z $1 ]]; then
+		mensaje_3	
 	fi
-fi
 
+	if [[ -z $2 ]]; then
+		mensaje_3
+	fi
+
+	if [[ -z $3 ]]; then
+		mensaje_3
+	fi
+
+	if ! [[ -f $HOME/.gnupg/gpg.conf.old ]]; then
+		mv -f $HOME/.gnupg/gpg.conf $HOME/.gnupg/gpg.conf.old
+		echo "keyserver hkp://pool.sks-keyservers.net" > $HOME/.gnupg/gpg.conf
+		echo "fixed-list-mode" >> $HOME/.gnupg/gpg.conf
+		echo "keyid-format 0xlong" >> $HOME/.gnupg/gpg.conf
+		echo "with-fingerprint" >> $HOME/.gnupg/gpg.conf
+		echo "personal-digest-preferences SHA512 SHA384 SHA256 SHA224" >> $HOME/.gnupg/gpg.conf
+		echo "default-preference-list SHA512 SHA384 SHA256 SHA224 AES256 AES192 AES CAST5 BZIP2 ZLIB ZIP Uncompressed" >> $HOME/.gnupg/gpg.conf
+		echo "use-agent" >> $HOME/.gnupg/gpg.conf
+		echo "verify-options show-uid-validity" >> $HOME/.gnupg/gpg.conf
+		echo "list-options show-uid-validit" >> $HOME/.gnupg/gpg.conf
+		echo "sig-notation issuer-fpr@notations.openpgp.fifthhorseman.net=%g" >> $HOME/.gnupg/gpg.conf
+		echo "cert-digest-algo SHA512" >> $HOME/.gnupg/gpg.conf
+		echo "keyserver-options no-honor-keyserver-url" >> $HOME/.gnupg/gpg.conf
+	fi
+
+	echo 'Key-Type: 1' > $genkey
+	echo 'Key-Length: 4096' >> $genkey
+	echo 'Subkey-Type: 1' >> $genkey
+	echo 'Subkey-Length: 4096' >> $genkey
+	echo 'Name-Real:' $1 $2 >> $genkey
+	echo 'Name-Email:' $3 >> $genkey
+	echo 'Expire-Date: 2y' >> $genkey
+	echo 'Passphrase:' $4 >> $genkey
+	script -q /dev/stdout -c 'gpg --batch --gen-key $genkey' | tee $genlisto
+	millave=$(cat $genlisto | grep "gpg: clave" | uniq | awk '{print $3}')
+	echo "Llave generada $millave"
+	gpg --keyserver pgp.mit.edu --send-keys $millave
+	gpg --keyserver pool.sks-keyservers.net --send-keys $millave
+	gpg --keyserver keyring.debian.org --send-key $millave
+	gpg --keyserver keyserver.ubuntu.com --send-keys $millave
+	gpg --keyserver keys.fedoraproject.org --send-keys $millave
+	gpg --keyserver pgp.uni-mainz.de --send-keys $millave
+	rm -f $genkey
+	rm -f $genlisto
+	mensaje_2
+}
+
+function oficina () {
+	optimizacion_1
+	$update
+	$insta xanadu-sfw
+	limpiar_1
+}
+
+function headless () {
+	# OJO esta opcion debe ejecutarse en un chroot desde un live; pero esta opcion no se ve desde un live
+	optimizacion_1
+	$update
+	$insta xanadu-headless
+	apt -y autoremove
+	apt -y purge $(deborphan --libdevel) $(deborphan --find-config) $(deborphan)
+	limpiar_1
 }
 
 lxterminal -e sudo -u debian-tor arm
+
+# hacer la interfaz tor como la experta del instalador, para tener en una misma pantalla tor on/off, router on/off y monitor
+
+# crear un yad para securegen
+
+# en seguridad poner la opcion de ignorar ping
 
 # agregar swapfilescan
 
@@ -820,21 +874,20 @@ lxterminal -e sudo -u debian-tor arm
 
 # acomodar la funcion mi persistencia
 
-# acomodar la funcion reparaciones y repdisk
+# colocar en postinstall la opcion para agregar bluetooth
 
 # hacer interfaz de myrf
-
-# acomodar la funcion myrf
 
 # hacer interfaz de clamav
 
 # fusionar passgen
 
 # agregar reparaciones
+# colocar la opcion de reparar el mouse en la pestaña reparaciones
+#synclient TapButton1=1 TapButton2=2 TapButton3=3 VertEdgeScroll=1
 
 # agregar repdisk
-
-# agregar modo-server
+# agregar mas opciones a repdisk (xfs, btrfs, etc)
 
 # agregar la funsion para ver que se esta ejecutando en seguridad
 
@@ -846,25 +899,23 @@ lxterminal -e sudo -u debian-tor arm
 
 # revisar que es kill-parent en yad
 
-# ver opciones de splash en yad
-
 # agregar mas opciones al parametro tab
 
 if ! [[ -d /lib/live/mount/rootfs ]]; then
 	$mitab --tabnum=1 --text-align=center --text="$bienvenida" --image-on-top --image="/usr/share/images/desktop-base/logo1.png" &\
 	$mitab --tabnum=2 --separator='\n' --text="$textoadicionales" --list --column="Acciones" "$ad1" "$ad2" "$ad3" "$ad4" "$ad5" "$ad6" "$ad7" "$ad8" &> /tmp/xan1 &\
-	$mitab --tabnum=3 --separator='\n' --text="$textopost" --list --column="Acciones" "$pos1" "$pos2" "$pos3" "$pos4" "$pos5" "$pos6" "$pos7" "$pos8" "$pos9" "$pos10" "$pos11" "$pos12" "$pos13" "$pos14" &> /tmp/xan2 &\
+	$mitab --tabnum=3 --separator='\n' --text="$textopost" --list --column="Acciones" "$pos1" "$pos2" "$pos3" "$pos4" "$pos5" "$pos6" "$pos7" "$pos8" "$pos9" "$pos10" "$pos11" "$pos12" "$pos13" "$pos14" "$pos15" "$pos16"&> /tmp/xan2 &\
 	$mitab --tabnum=4 --separator='\n' --text="$textoseguridad" --list --checklist --column="Marque" --column="Num" --column="Opcion" FALSE 01 "$seg1" FALSE 02 "$seg2" FALSE 03 "$seg3" FALSE 04 "$seg4" FALSE 05 "$seg5" &> /tmp/xan3 &\
 	$mitab --tabnum=5 --text="$textotor" &> /tmp/xan4 &\
 	$mitab --tabnum=6 --text="$wifitor" &> /tmp/xan5 &\
 	$mimain --on-top --window-icon=/usr/share/icons/post-install.png --tab="$pest1" --tab="$pest2" --tab="Post-install" --tab="$pest3" --tab="$pest4" --tab="$pest5" --text="$textomain"
 else
-	$mitab --tabnum=1 --text="$bienvenida"  &\
+	$mitab --tabnum=1 --text-align=center --text="$bienvenida" --image-on-top --image="/usr/share/images/desktop-base/logo1.png" &\
 	$mitab --tabnum=2 --separator='\n' --text="$textoadicionales" --list --column="Acciones" "$ad1" "$ad2" "$ad3" "$ad4" "$ad5" "$ad6" "$ad7" "$ad8" &> /tmp/xan1 &\
 	$mitab --tabnum=3 --separator='\n' --text="$textoseguridad" --list --checklist --column="Marque" --column="Num" --column="Opcion" FALSE 01 "$seg1" FALSE 02 "$seg2" FALSE 03 "$seg3" FALSE 04 "$seg4" FALSE 05 "$seg5" &> /tmp/xan3 &\
 	$mitab --tabnum=4 --text="$textotor" &> /tmp/xan4 &\
 	$mitab --tabnum=5 --text="$wifitor" &> /tmp/xan5 &\
-	$mimain --tab="$pest1" --tab="$pest2" --tab="$pest3" --tab="$pest4" --tab="$pest5" --text="$textomain"
+	$mimain --on-top --window-icon=/usr/share/icons/post-install.png --tab="$pest1" --tab="$pest2" --tab="$pest3" --tab="$pest4" --tab="$pest5" --text="$textomain"
 fi
 
 xan1=$(cat /tmp/xan1)
@@ -873,10 +924,12 @@ xan3=$(cat /tmp/xan3)
 xan4=$(cat /tmp/xan4)
 xan5=$(cat /tmp/xan5)
 
+# pestaña adicionales
+
 if [ "$xan1" = "$ad2" ]; then
 	zenity --text-info --title="Persistencia" --filename=$persistencia
 	if [[ $? == 0 ]] ; then
-		echo 1 > /dev/null
+		$null
 	else
 		exit 0
 	fi
@@ -906,16 +959,20 @@ elif [ "$xan1" = "$ad5" ]; then
 elif [ "$xan1" = "$ad8" ]; then
 	xddclone
 else
-	echo 1 > /dev/null
+	$null
 fi
+
+# pestaña post
 
 if [ "$xan2" = "$pos2" ]; then
 	if (( $memoria > 2048000 )); then	
 		$update
 		$insta xanadu-kde | progress_2
 		limpiar_1 | progress_limpiar_2
+		mensaje_2
 	else
 		$errores $cantidadram
+		exit 1
 	fi
 
 elif [ "$xan2" = "$pos3" ]; then
@@ -923,27 +980,33 @@ elif [ "$xan2" = "$pos3" ]; then
 		$update
 		$insta xanadu-gnome | progress_2
 		limpiar_1 | progress_limpiar_2
+		mensaje_2
 	else
 		$errores $cantidadram
+		exit 1
 	fi
 
 elif [ "$xan2" = "$pos4" ]; then
 	$update
 	$insta xanadu-xfce | progress_2
 	limpiar_1 | progress_limpiar_2
+	mensaje_2
 
 elif [ "$xan2" = "$pos5" ]; then
 	$update
 	$insta xanadu-enlightenment | progress_2
 	limpiar_1 | progress_limpiar_2
+	mensaje_2
 
 elif [ "$xan2" = "$pos6" ]; then
 	if (( $memoria > 2048000 )); then
 		$update
 		$insta xanadu-accessibility | progress_2
 		limpiar_1 | progress_limpiar_2
+		mensaje_2
 	else
 		$errores $cantidadram
+		exit 1
 	fi
 
 elif [ "$xan2" = "$pos7" ]; then
@@ -951,28 +1014,34 @@ elif [ "$xan2" = "$pos7" ]; then
 		$update
 		$insta playonlinux | progress_2
 		limpiar_1 | progress_limpiar_2
+		mensaje_2
 	else
 		$errores $cantidadram
+		exit 1
 	fi
 
 elif [ "$xan2" = "$pos8" ]; then
 	$update
-	$insta fglrx-atieventsd fglrx-control fglrx-driver fglrx-modules-dkms radeontool | progress_2
+	$insta xanadu-ati | progress_2
 	limpiar_1 | progress_limpiar_2
+	mensaje_2
 
 elif [ "$xan2" = "$pos9" ]; then
 	$update
-	$insta nvclock nvidia-alternative nvidia-glx nvidia-installer-cleanup nvidia-kernel-common nvidia-kernel-dkms nvidia-settings nvidia-support nvidia-vdpau-driver nvidia-detect nvidia-xconfig | progress_2
+	$insta xanadu-nvidia | progress_2
 	limpiar_1 | progress_limpiar_2
+	mensaje_2
 
 elif [ "$xan2" = "$pos10" ]; then
 	$update
 	$insta xanadu-low | progress_2
 	limpiar_1 | progress_limpiar_2
+	mensaje_2
 
 elif [ "$xan2" = "$pos11" ]; then
 	headers_1 | progress_2
 	limpiar_1 | progress_limpiar_2
+	mensaje_2
 
 elif [ "$xan2" = "$pos1" ]; then
 	apparmor_1 | progress_2
@@ -980,11 +1049,13 @@ elif [ "$xan2" = "$pos1" ]; then
 		$insta thermald
 	fi
 	limpiar_1 | progress_limpiar_2
+	mensaje_2
 
 elif [ "$xan2" = "$pos12" ]; then
 	$update
 	$insta hplip-gui | progress_2
 	limpiar_1 | progress_limpiar_2
+	mensaje_2
 
 elif [ "$xan2" = "$pos13" ]; then
 	if $advertencia --text="Este software solo debe ser instalado en una laptop ¿desea continuar?"; then
@@ -992,14 +1063,24 @@ elif [ "$xan2" = "$pos13" ]; then
 		$insta laptop-mode-tools | progress_2
 		systemctl enable laptop-mode
 		limpiar_1 | progress_limpiar_2
+		mensaje_2
 	else
 		source $0
 	fi
 
 elif [ "$xan2" = "$pos14" ]; then
-	xterm -e /usr/bin/actualizar
+	xterm -e /usr/bin/actualizar | progress_2
+	mensaje_2
+
+elif [ "$xan2" = "$pos15" ]; then
+	oficina | progress_limpiar_2
+	mensaje_2
+
+elif [ "$xan2" = "$pos16" ]; then
+	headless | progress_limpiar_2
+	mensaje_2
 else
-	echo 1 > /dev/null
+	$null
 fi
 
 exit 0
