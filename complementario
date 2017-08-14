@@ -26,9 +26,9 @@ cantidadram='--window-icon=/usr/share/icons/post-install.png --text="Debe tener 
 seguro='--window-icon=/usr/share/icons/post-install.png --text="¿Esta seguro de querer instalar este software?"'
 bienvenida="Bienvenido a Xanadu GNU/Linux $(cat /etc/os-release | grep 'VERSION=' | cut -c 10-14)"
 textoseguridad="Marque las opciones que usted quiere activar. Los servicios se activaran con sus configuraciones por defecto, es necesario que el usuario las modifique de acuerdo a sus necesidades."
-textoadicionales="texto de adicionales"
-textopost="texto de post-instalacion"
-textotor="tor"
+textoadicionales="Seleccione la herramienta que desea ejecutar"
+textopost="Escoja los elementos que desea instalar"
+textotor="Aca se muestran los diferentes servicios relacionados con Tor "
 textomain="Escoja la pestaña para ver las opciones"
 wifitor="wifi tor"
 pest1="Bienvenida"
@@ -69,6 +69,11 @@ seg2="Activar Fail2ban"
 seg3="Activar PSAD"
 seg4="Activar NTP"
 seg5="Activar todos"
+to1="Iniciar Tor"
+to2="Detener Tor"
+to3="Monitorear Tor"
+to4="Iniciar router wifi Tor"
+to5="Detener router wifi tor"
 donde="/mnt/miusb"
 genkey="/tmp/genkey"
 genlisto="/tmp/listo"
@@ -118,6 +123,9 @@ function apparmor_1 () {
 	$insta lightdm-gtk-greeter-settings grub-customizer icedove camorama
 	if (( $memoria > 4096000 )); then
 		$insta preload
+	fi
+	if [[ $(lscpu | grep ID | awk '{print $4}') = GenuineIntel ]];then
+		$insta thermald
 	fi
 }
 
@@ -185,17 +193,6 @@ function tor_1 () {
 	echo "Se inicia tsocks" >> "$lock"
 	systemctl start memlockd
 	echo "Se inicia memlockd" >> "$lock"
-	###############
-	if [[ -f "$lock" ]]; then
-		$errores --window-icon=/usr/share/icons/tor-icon.png --text="Tor ya se esta ejecutando."
-		exit 1
-	else
-		$advertencia --window-icon=/usr/share/icons/tor-icon.png --timeout=10 --text="TOR ayuda a proteger su informacion al navegar por la red, sin embargo puede dejar rastros en su equipo. Espere mientras se inicia TOR se le notificara al completarse la tarea."
-		tor_1
-		espera
-		yad --window-icon=/usr/share/icons/tor-icon.png --timeout=30 --skip-taskbar --button=ACEPTAR:1 --title="Finalizado" --fixed --center --text-align=fill --borders=6 --text="Inicio completado. Si utiliza un navegador diferente de Firefox, introduzca la siguiente configuración de PROXY en su navegador: localhost (o el ip del equipo) puerto 8118 (9151 para socks) y localhost (o el ip del equipo) puerto 9050 para las otras aplicaciones que usen socks."
-		firefox https://check.torproject.org/
-	fi
 }
 
 function tor_0 () {
@@ -234,104 +231,81 @@ function tor_0 () {
 	done
 	echo "Se activan las particiones swap" >> "$lock"
 	rm -f "$lock"
-	################
-	if [[ -f "$lock" ]]; then
-		tor_0
-		$final --window-icon=/usr/share/icons/tor-icon.png --text="Servicio finalizado exitosamente."
-	else
-		$errores --window-icon=/usr/share/icons/tor-icon.png --text="Tor no se esta ejecutando."
-		exit 1
-	fi
 }
 
 function routeron () {
-	if [[ -f "$lock3" ]]; then
-		$errores --window-icon=/usr/share/icons/wifi-on.png --timeout=30 --text="El Router WiFi Tor ya se esta ejecutando con los siguientes parametros: SSID: $(grep -n 'ssid=' /etc/hostapd/hostapd.conf | grep 6 | cut -c 8-18)\nPassword: $(grep 'wpa_passphrase' /etc/hostapd/hostapd.conf | cut -c 16-26)"
-		exit 1
-	else
-		yad --window-icon=/usr/share/icons/wifi-on.png --skip-taskbar --fixed --center --text-align=fill --borders=6 --button=Aceptar:0 --button=Cancelar:1 --title="ADVERTENCIA" --text="Esta funcion es EXPERIMENTAL, puede cambiar algunos parametros del router en /etc/xanadurouter.conf. Se recomienda no usar la pc durante la ejecucion del router wifi, presione aceptar para continuar."
-		if [[ $? = 0 ]]; then
-			echo "Comienza el arranque del router tor" > "$lock3"
-			source /etc/xanadurouter.conf
-			cp -f /etc/network/interfaces /etc/network/interfaces.old
-			cp -f /etc/network/interfaces.ori /etc/network/interfaces
-			cp -f /etc/dnsmasq.conf.ori /etc/dnsmasq.conf
-			cp -f /etc/hostapd/hostapd.conf.ori /etc/hostapd/hostapd.conf
-			echo "Se copian las configuraciones de interfaces, dnsmasq y hostapd" >> "$lock3"
-			service network-manager stop
-			echo "Se detiene el servicio network-manager" >> "$lock3"
-			macchanger -r "$red1"
-			echo "Se cambia la mac de la tarjeta de red" >> "$lock3"
-			echo -e "\nauto" $red1 >> /etc/network/interfaces
-			echo "iface" $red1 "inet dhcp" >> /etc/network/interfaces
-			echo -e "\nauto" $red2 >> /etc/network/interfaces
-			echo "allow-hotplug" $red2 >> /etc/network/interfaces
-			echo "iface" $red2 "inet static" >> /etc/network/interfaces
-			echo "address 192.168.10.1" >> /etc/network/interfaces
-			echo "netmask 255.255.255.0" >> /etc/network/interfaces
-			mv -f /etc/network/if-pre-up.d/linux-wlan-ng-pre-up /etc/network/if-pre-up.d/linux-wlan-ng-pre-up.old
-			echo "Se cambia las configuraciones de la red" >> "$lock3"
-			ifup "$red1"
-			ifup "$red2"
-			echo "Se inician las interfaces de red" >> "$lock3"
-			echo "interface="$red2 >> /etc/dnsmasq.conf
-			echo "except-interface="$red1 >> /etc/dnsmasq.conf
-			echo "listen-address=192.168.10.1" >> /etc/dnsmasq.conf
-			echo "listen-address=127.0.0.1" >> /etc/dnsmasq.conf
-			echo "dhcp-range=192.168.10.50,192.168.10.150,255.255.255.0,12h" >> /etc/dnsmasq.conf
-			echo "dhcp-host=AB:CD:EF:FF:11:22,net:known" >> /etc/dnsmasq.conf
-			#echo "dhcp-ignore=tag:!known" >> /etc/dnsmasq.conf
-			echo "Se agregan configuraciones adicionales a dnsmasq" >> "$lock3"
-			tor_1
-			echo "Se ejecuta tor" >> "$lock3"
-			espera
-			echo "Se ejecuta la funcion espera" >> "$lock3"
-			sed -i 's_xanadu_'$(date | md5sum | cut -c 1-10)'_g' /etc/hostapd/hostapd.conf
-			sed -i 's_1234567890_'$(date | md5sum | cut -c 1-10)'_g' /etc/hostapd/hostapd.conf
-			hostapd -B /etc/hostapd/hostapd.conf -P /run/hostapd.pid
-			echo "Se cambia la configuracion de hostapd" >> "$lock3"
-			#modprobe -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police
-			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 1:21 --syn -j REDIRECT --to-ports $TOR_PORT
-			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 23:79 --syn -j REDIRECT --to-ports $TOR_PORT
-			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 80 --syn -j REDIRECT --to-ports 8118
-			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 81:442 --syn -j REDIRECT --to-ports $TOR_PORT
-			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 443 --syn -j REDIRECT --to-ports 8118
-			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 444:5900 --syn -j REDIRECT --to-ports $TOR_PORT
-			iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 5902:65535 --syn -j REDIRECT --to-ports $TOR_PORT
-			echo "Se agregan reglas a iptables" >> "$lock3"
-			$advertencia --window-icon=/usr/share/icons/wifi-on.png --timeout=30 --text="SSID: $(grep -n 'ssid=' /etc/hostapd/hostapd.conf | grep 6 | cut -c 8-18)\nPassword: $(grep 'wpa_passphrase' /etc/hostapd/hostapd.conf | cut -c 16-26)"
-		else
-			exit 0
-		fi
-	fi
+	echo "Comienza el arranque del router tor" > "$lock3"
+	source /etc/xanadurouter.conf
+	cp -f /etc/network/interfaces /etc/network/interfaces.old
+	cp -f /etc/network/interfaces.ori /etc/network/interfaces
+	cp -f /etc/dnsmasq.conf.ori /etc/dnsmasq.conf
+	cp -f /etc/hostapd/hostapd.conf.ori /etc/hostapd/hostapd.conf
+	echo "Se copian las configuraciones de interfaces, dnsmasq y hostapd" >> "$lock3"
+	service network-manager stop
+	echo "Se detiene el servicio network-manager" >> "$lock3"
+	macchanger -r "$red1"
+	echo "Se cambia la mac de la tarjeta de red" >> "$lock3"
+	echo -e "\nauto" $red1 >> /etc/network/interfaces
+	echo "iface" $red1 "inet dhcp" >> /etc/network/interfaces
+	echo -e "\nauto" $red2 >> /etc/network/interfaces
+	echo "allow-hotplug" $red2 >> /etc/network/interfaces
+	echo "iface" $red2 "inet static" >> /etc/network/interfaces
+	echo "address 192.168.10.1" >> /etc/network/interfaces
+	echo "netmask 255.255.255.0" >> /etc/network/interfaces
+	mv -f /etc/network/if-pre-up.d/linux-wlan-ng-pre-up /etc/network/if-pre-up.d/linux-wlan-ng-pre-up.old
+	echo "Se cambia las configuraciones de la red" >> "$lock3"
+	ifup "$red1"
+	ifup "$red2"
+	echo "Se inician las interfaces de red" >> "$lock3"
+	echo "interface="$red2 >> /etc/dnsmasq.conf
+	echo "except-interface="$red1 >> /etc/dnsmasq.conf
+	echo "listen-address=192.168.10.1" >> /etc/dnsmasq.conf
+	echo "listen-address=127.0.0.1" >> /etc/dnsmasq.conf
+	echo "dhcp-range=192.168.10.50,192.168.10.150,255.255.255.0,12h" >> /etc/dnsmasq.conf
+	echo "dhcp-host=AB:CD:EF:FF:11:22,net:known" >> /etc/dnsmasq.conf
+	#echo "dhcp-ignore=tag:!known" >> /etc/dnsmasq.conf
+	echo "Se agregan configuraciones adicionales a dnsmasq" >> "$lock3"
+	tor_1
+	echo "Se ejecuta tor" >> "$lock3"
+	espera
+	echo "Se ejecuta la funcion espera" >> "$lock3"
+	sed -i 's_xanadu_'$(date | md5sum | cut -c 1-10)'_g' /etc/hostapd/hostapd.conf
+	sed -i 's_1234567890_'$(date | md5sum | cut -c 1-10)'_g' /etc/hostapd/hostapd.conf
+	hostapd -B /etc/hostapd/hostapd.conf -P /run/hostapd.pid
+	echo "Se cambia la configuracion de hostapd" >> "$lock3"
+	#modprobe -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police
+	iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 1:21 --syn -j REDIRECT --to-ports $TOR_PORT
+	iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 23:79 --syn -j REDIRECT --to-ports $TOR_PORT
+	iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 80 --syn -j REDIRECT --to-ports 8118
+	iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 81:442 --syn -j REDIRECT --to-ports $TOR_PORT
+	iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 443 --syn -j REDIRECT --to-ports 8118
+	iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 444:5900 --syn -j REDIRECT --to-ports $TOR_PORT
+	iptables -t nat -A PREROUTING -i "$red2" -p tcp --dport 5902:65535 --syn -j REDIRECT --to-ports $TOR_PORT
+	echo "Se agregan reglas a iptables" >> "$lock3"
+	$advertencia --window-icon=/usr/share/icons/wifi-on.png --timeout=30 --text="SSID: $(grep -n 'ssid=' /etc/hostapd/hostapd.conf | grep 6 | cut -c 8-18)\nPassword: $(grep 'wpa_passphrase' /etc/hostapd/hostapd.conf | cut -c 16-26)"
 }
 
 function routeroff () {
-	if [[ -f "$lock3" ]]; then
-		source /etc/xanadurouter.conf
-		killall hostapd
-		echo "Se detiene el proceso hostapd" >> "$lock3"
-		rm -f /run/hostapd.pid
-		ifdown "$red1"
-		ifdown "$red2"
-		echo "Se detienen las interfaces de red" >> "$lock3"
-			mv -f /etc/network/if-pre-up.d/linux-wlan-ng-pre-up.old /etc/network/if-pre-up.d/linux-wlan-ng-pre-up
-		tor_0
-		macchanger -p "$red1"
-		echo "Se restaura la mac" >> "$lock3"
-		cp -f /etc/network/interfaces.old /etc/network/interfaces
-		cp -f /etc/hostapd/hostapd.conf.ori /etc/hostapd/hostapd.conf
-		cp -f /etc/dnsmasq.conf.ori /etc/dnsmasq.conf
-		echo "Se restauran las configuraciones de interfaces, hostapd y dnsmasq" >> "$lock3"
-		#rmmod -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police
-		service network-manager start
-		echo "Se reinicia network-manager" >> "$lock3"
-		rm -f "$lock3"
-		$final --window-icon=/usr/share/icons/wifi-off.png --text="Servicio finalizado exitosamente."
-	else
-		$errores --window-icon=/usr/share/icons/wifi-off.png --text="El Router WiFi Tor no se esta ejecutando."
-		exit 1
-	fi
+	source /etc/xanadurouter.conf
+	killall hostapd
+	echo "Se detiene el proceso hostapd" >> "$lock3"
+	rm -f /run/hostapd.pid
+	ifdown "$red1"
+	ifdown "$red2"
+	echo "Se detienen las interfaces de red" >> "$lock3"
+	mv -f /etc/network/if-pre-up.d/linux-wlan-ng-pre-up.old /etc/network/if-pre-up.d/linux-wlan-ng-pre-up
+	tor_0
+	macchanger -p "$red1"
+	echo "Se restaura la mac" >> "$lock3"
+	cp -f /etc/network/interfaces.old /etc/network/interfaces
+	cp -f /etc/hostapd/hostapd.conf.ori /etc/hostapd/hostapd.conf
+	cp -f /etc/dnsmasq.conf.ori /etc/dnsmasq.conf
+	echo "Se restauran las configuraciones de interfaces, hostapd y dnsmasq" >> "$lock3"
+	#rmmod -f ip_tables ip_conntrack iptable_filter iptable_nat ipt_physdev act_police
+	service network-manager start
+	echo "Se reinicia network-manager" >> "$lock3"
+	rm -f "$lock3"
+	$final --window-icon=/usr/share/icons/wifi-off.png --text="Servicio finalizado exitosamente."
 }
 
 function xclamav () {
@@ -860,11 +834,9 @@ function headless () {
 	limpiar_1
 }
 
-lxterminal -e sudo -u debian-tor arm
-
-# hacer la interfaz tor como la experta del instalador, para tener en una misma pantalla tor on/off, router on/off y monitor
-
 # crear un yad para securegen
+
+# crear interfaz para firmar archivos con gpg (xsign)
 
 # en seguridad poner la opcion de ignorar ping
 
@@ -891,8 +863,6 @@ lxterminal -e sudo -u debian-tor arm
 
 # agregar la funsion para ver que se esta ejecutando en seguridad
 
-# detectar tor por el pid
-
 # revisar si hay conexion para activar post-instalador
 
 # hacer que yad escriba su pid en run mediante variable YAD_PID
@@ -901,19 +871,23 @@ lxterminal -e sudo -u debian-tor arm
 
 # agregar mas opciones al parametro tab
 
+# crear pestaña de backup con todel codigo que tengo sobre el tema
+
 if ! [[ -d /lib/live/mount/rootfs ]]; then
+	# instalado
 	$mitab --tabnum=1 --text-align=center --text="$bienvenida" --image-on-top --image="/usr/share/images/desktop-base/logo1.png" &\
 	$mitab --tabnum=2 --separator='\n' --text="$textoadicionales" --list --column="Acciones" "$ad1" "$ad2" "$ad3" "$ad4" "$ad5" "$ad6" "$ad7" "$ad8" &> /tmp/xan1 &\
 	$mitab --tabnum=3 --separator='\n' --text="$textopost" --list --column="Acciones" "$pos1" "$pos2" "$pos3" "$pos4" "$pos5" "$pos6" "$pos7" "$pos8" "$pos9" "$pos10" "$pos11" "$pos12" "$pos13" "$pos14" "$pos15" "$pos16"&> /tmp/xan2 &\
 	$mitab --tabnum=4 --separator='\n' --text="$textoseguridad" --list --checklist --column="Marque" --column="Num" --column="Opcion" FALSE 01 "$seg1" FALSE 02 "$seg2" FALSE 03 "$seg3" FALSE 04 "$seg4" FALSE 05 "$seg5" &> /tmp/xan3 &\
-	$mitab --tabnum=5 --text="$textotor" &> /tmp/xan4 &\
+	$mitab --tabnum=5 --separator='\n' --text="$textotor" --list --column="Acciones" "$to1" "$to2" "$to3" "$to4" "$to5" &> /tmp/xan4 &\
 	$mitab --tabnum=6 --text="$wifitor" &> /tmp/xan5 &\
 	$mimain --on-top --window-icon=/usr/share/icons/post-install.png --tab="$pest1" --tab="$pest2" --tab="Post-install" --tab="$pest3" --tab="$pest4" --tab="$pest5" --text="$textomain"
 else
+	#live
 	$mitab --tabnum=1 --text-align=center --text="$bienvenida" --image-on-top --image="/usr/share/images/desktop-base/logo1.png" &\
 	$mitab --tabnum=2 --separator='\n' --text="$textoadicionales" --list --column="Acciones" "$ad1" "$ad2" "$ad3" "$ad4" "$ad5" "$ad6" "$ad7" "$ad8" &> /tmp/xan1 &\
 	$mitab --tabnum=3 --separator='\n' --text="$textoseguridad" --list --checklist --column="Marque" --column="Num" --column="Opcion" FALSE 01 "$seg1" FALSE 02 "$seg2" FALSE 03 "$seg3" FALSE 04 "$seg4" FALSE 05 "$seg5" &> /tmp/xan3 &\
-	$mitab --tabnum=4 --text="$textotor" &> /tmp/xan4 &\
+	$mitab --tabnum=5 --separator='\n' --text="$textotor" --list --column="Acciones" "$to1" "$to2" "$to3" "$to4" "$to5" &> /tmp/xan4 &\
 	$mitab --tabnum=5 --text="$wifitor" &> /tmp/xan5 &\
 	$mimain --on-top --window-icon=/usr/share/icons/post-install.png --tab="$pest1" --tab="$pest2" --tab="$pest3" --tab="$pest4" --tab="$pest5" --text="$textomain"
 fi
@@ -1045,9 +1019,6 @@ elif [ "$xan2" = "$pos11" ]; then
 
 elif [ "$xan2" = "$pos1" ]; then
 	apparmor_1 | progress_2
-	if [[ $(lscpu | grep ID | awk '{print $4}') = GenuineIntel ]];then
-		$insta thermald
-	fi
 	limpiar_1 | progress_limpiar_2
 	mensaje_2
 
@@ -1079,6 +1050,56 @@ elif [ "$xan2" = "$pos15" ]; then
 elif [ "$xan2" = "$pos16" ]; then
 	headless | progress_limpiar_2
 	mensaje_2
+else
+	$null
+fi
+
+# pestaña tor
+
+if [ "$xan4" = "$to1" ]; then
+	if [[ -f "$lock" ]]; then
+		$errores --window-icon=/usr/share/icons/tor-icon.png --text="Tor ya se esta ejecutando."
+		exit 1
+	else
+		$advertencia --window-icon=/usr/share/icons/tor-icon.png --timeout=10 --text="TOR ayuda a proteger su informacion al navegar por la red, sin embargo puede dejar rastros en su equipo. Espere mientras se inicia TOR se le notificara al completarse la tarea."
+		tor_1
+		espera
+		yad --window-icon=/usr/share/icons/tor-icon.png --timeout=30 --skip-taskbar --button=ACEPTAR:1 --title="Finalizado" --fixed --center --text-align=fill --borders=6 --text="Inicio completado. Si utiliza un navegador diferente de Firefox, introduzca la siguiente configuración de PROXY en su navegador: localhost (o el ip del equipo) puerto 8118 (9151 para socks) y localhost (o el ip del equipo) puerto 9050 para las otras aplicaciones que usen socks."
+		firefox https://check.torproject.org/
+	fi
+
+elif [ "$xan4" = "$to2" ]; then
+	if [[ -f "$lock" ]]; then
+		tor_0
+		$final --window-icon=/usr/share/icons/tor-icon.png --text="Servicio finalizado exitosamente."
+	else
+		$errores --window-icon=/usr/share/icons/tor-icon.png --text="Tor no se esta ejecutando."
+		exit 1
+	fi
+
+elif [ "$xan4" = "$to3" ]; then
+	lxterminal -e sudo -u debian-tor arm
+
+elif [ "$xan4" = "$to4" ]; then
+	if [[ -f "$lock3" ]]; then
+		$errores --window-icon=/usr/share/icons/wifi-on.png --timeout=30 --text="El Router WiFi Tor ya se esta ejecutando con los siguientes parametros: SSID: $(grep -n 'ssid=' /etc/hostapd/hostapd.conf | grep 6 | cut -c 8-18)\nPassword: $(grep 'wpa_passphrase' /etc/hostapd/hostapd.conf | cut -c 16-26)"
+		exit 1
+	else
+		yad --window-icon=/usr/share/icons/wifi-on.png --skip-taskbar --fixed --center --text-align=fill --borders=6 --button=Aceptar:0 --button=Cancelar:1 --title="ADVERTENCIA" --text="Esta funcion es EXPERIMENTAL, puede cambiar algunos parametros del router en /etc/xanadurouter.conf. Se recomienda no usar la pc durante la ejecucion del router wifi, presione aceptar para continuar."
+		if [[ $? = 0 ]]; then
+			routeron
+		else
+			exit 0
+		fi
+	fi
+
+elif [ "$xan4" = "$to5" ]; then
+	if [[ -f "$lock3" ]]; then
+		
+	else
+		$errores --window-icon=/usr/share/icons/wifi-off.png --text="El Router WiFi Tor no se esta ejecutando."
+		exit 1
+	fi
 else
 	$null
 fi
