@@ -1,4 +1,17 @@
-commit 171bf6ecf66574bd9eb5f3abcb6083eb2f8d7358 (HEAD, origin/master, origin/HEAD, master)
+commit 6304a51214a20ec9444abca29c0a493ae957f177 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Mon Aug 14 19:26:46 2017 -0400
+
+    * se agregan los iconos
+    * cambios en las funciones
+
+commit 32bb2f9b99fdf743298671345183f8af1674d32b
+Author: jose perez <sinfallas@gmail.com>
+Date:   Sun Jul 30 22:30:05 2017 -0400
+
+    * changelog
+
+commit 171bf6ecf66574bd9eb5f3abcb6083eb2f8d7358
 Author: jose perez <sinfallas@gmail.com>
 Date:   Sun Jul 30 22:29:25 2017 -0400
 
