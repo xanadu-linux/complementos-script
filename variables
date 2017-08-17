@@ -2,6 +2,7 @@
 # Made by Sinfallas <sinfallas@yahoo.com>
 # Licence: GPL-2
 LC_ALL=C
+miver="1"
 memoria=$(grep "MemTotal" /proc/meminfo | awk '{print $2}')
 cpu=$(lscpu | grep "MHz" | awk '{print $3}')
 miswap=$(fdisk -l | grep "swap" | awk '{print $1}')
