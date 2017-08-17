@@ -863,7 +863,7 @@ function headless () {
 
 # agregar reparaciones
 # colocar la opcion de reparar el mouse en la pestaña reparaciones
-#synclient TapButton1=1 TapButton2=2 TapButton3=3 VertEdgeScroll=1
+# synclient TapButton1=1 TapButton2=2 TapButton3=3 VertEdgeScroll=1
 
 # agregar repdisk
 # agregar mas opciones a repdisk (xfs, btrfs, etc)
