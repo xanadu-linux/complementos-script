@@ -1,4 +1,22 @@
-commit 6304a51214a20ec9444abca29c0a493ae957f177 (HEAD, origin/master, origin/HEAD, master)
+commit d31b8bb839ccfdfcebcba7656048c98a3dfc206d (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Aug 17 19:39:39 2017 -0400
+
+    * bugfix
+
+commit e5f9796f38a104db15b029dd1a2cc3e417131f31
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Aug 17 19:36:52 2017 -0400
+
+    * se corrigen unas funciones
+
+commit e1d7017730d8add747eacb3c2347170f8e6b9e9c
+Author: jose perez <sinfallas@gmail.com>
+Date:   Mon Aug 14 19:27:12 2017 -0400
+
+    * changelog
+
+commit 6304a51214a20ec9444abca29c0a493ae957f177
 Author: jose perez <sinfallas@gmail.com>
 Date:   Mon Aug 14 19:26:46 2017 -0400
 
@@ -31,7 +49,7 @@ Date:   Sun Jul 30 14:35:56 2017 -0400
 
     * se agrega la comprobacion de root
 
-commit 56493bab75b0b465246cc6326bbb3611ddca8e6a
+commit 56493bab75b0b465246cc6326bbb3611ddca8e6a (tag: v0.2)
 Author: jose perez <sinfallas@gmail.com>
 Date:   Sun Jul 30 14:30:03 2017 -0400
 
