@@ -314,15 +314,13 @@ function routeroff () {
 function xclamav () {
 	$advertencia --window-icon=clamtk --timeout=5 --text="La actualización de base de firmas de virus retardara el inicio, por favor espere, presione aceptar para continuar."
 	mkdir -p /root/.clamtk/db
-	mkdir -p /tmp/clamav
 	mkdir -p /var/log/clamav
 	touch /var/log/clamav/freshclam.log
 	touch /var/log/clamav/clamav.log
-	chmod 777 /tmp/clamav
-	chmod 600 /var/log/freshclam.log
-	chmod 600 /var/log/clamav/clamav.log
 	chown clamav /var/log/freshclam.log
 	chown clamav /var/log/clamav/clamav.log
+	chmod 600 /var/log/freshclam.log
+	chmod 600 /var/log/clamav/clamav.log
 	sed -i 's_UpdateLogFile_#UpdateLogFile_g' /etc/clamav/freshclam.conf
 	/usr/bin/freshclam --datadir=/tmp/clamav/ | $progreso --progress-text="Actualizando base de firmas de virus, por favor espere..." --title="Actualizando"
 	mv -f /tmp/clamav/*.cvd /root/.clamtk/db/
@@ -455,23 +453,13 @@ function myrf_reset () {
 # fin de funciones de la pantallas myrf
 
 function xpassgen () {
-	if [[ -z $1 ]]; then
-		< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c 8;echo;
-	else
-		< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c "$1";echo;
-	fi
+# colocar el rango entre 8 y 100
+# esto no debe estar en una funcion sino directamente incrustado
+	< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c "$rango";echo;
 }
 
 # inicio de funciones de la pantallas reparaciones
-
-function reparaciones_firewall () {
-	iptables_clean
-}
-
-
-function reparaciones_limpiar () {
-	limpiar_1
-}
+# en la pestaña colocar la opcion firewall que llame a iptables_clean y limpiar que llama a limpiar_1
 
 function reparaciones_firefox () {
 	rm -rf /home/*/.mozilla/*
@@ -536,6 +524,7 @@ function reparaciones_reinstall () {
 # fin de funciones de la pantallas reparaciones
 
 function xrepdisk () {
+# hacer una interfaz yad
 	case "$1" in
 		badblocks)
 			badblocks -svnf -o $HOME/badblocks.log $2
@@ -595,11 +584,14 @@ function ntp_off () {
 }
 
 function xsegoff () {
+	unset -v opts
 	opts=$(yad --window-icon=/usr/share/icons/lock-close.png --center --list --title="Desactivar elementos de seguridad" --text="Marque las opciones que usted quiere desactivar." --checklist --column "Marque" --column "Num" --column "Opcion" --width=590 --height=525 --button="Aceptar":0 --button="Salir":1\
   FALSE 01 "Desctivar Fail2ban" \
   FALSE 02 "Desctivar PSAD" \
   FALSE 03 "Desctivar NTP" \
   TRUE 04 "Desctivar todos")
+
+# colocar el mensaje de no selecciono nada
 
 	if [[ $? = 1 ]]; then
 		exit 0
@@ -628,7 +620,8 @@ function xsegoff () {
 
 function xsegon () {
 	# las opciones de opts para yad estan duplicadas y podrian ponerse en una variable
-	opts=$(yad --window-icon=/usr/share/icons/lock-close.png --center --list --title="Activar elementos de seguridad" --text="Marque las opciones que usted quiere activar. Los servicios se activaran con sus configuraciones por defecto es necesario que el usuario las modifique de acuerdo a sus necesidades." --checklist --column "Marque" --column "Num" --column "Opcion" --width=590 --height=525 --button="Aceptar":0 --button="Salir":1\
+	unset -v opts2
+	opts2=$(yad --window-icon=/usr/share/icons/lock-close.png --center --list --title="Activar elementos de seguridad" --text="Marque las opciones que usted quiere activar. Los servicios se activaran con sus configuraciones por defecto es necesario que el usuario las modifique de acuerdo a sus necesidades." --checklist --column "Marque" --column "Num" --column "Opcion" --width=590 --height=525 --button="Aceptar":0 --button="Salir":1\
   FALSE 01 "Activar AIDE" \
   FALSE 02 "Activar Fail2ban" \
   FALSE 03 "Activar PSAD" \
@@ -639,23 +632,23 @@ function xsegon () {
 		exit 0
 	fi
 
-	if $(echo $opts | grep -q 01); then 
+	if $(echo $opts2 | grep -q 01); then 
 		aide_on
 	fi
 
-	if $(echo $opts | grep -q 02); then
+	if $(echo $opts2 | grep -q 02); then
 		fail_on
 	fi
 
-	if $(echo $opts | grep -q 03); then
+	if $(echo $opts2 | grep -q 03); then
 		psad_on
 	fi
 
-	if $(echo $opts | grep -q 04); then
+	if $(echo $opts2 | grep -q 04); then
 		ntp_on
 	fi
 
-	if $(echo $opts | grep -q 05); then
+	if $(echo $opts2 | grep -q 05); then
 		aide_on
 		psad_on
 		fail_on
@@ -666,6 +659,9 @@ function xsegon () {
 }
 
 function xddclone () {
+	unset -v disco
+	unset -v usb
+	unset -v usb2
 	disco=$(fdisk -l | grep "Disco" | awk '{print $2}' | sed 's/.$//g' | yad --center --no-click --list --title="Disco" --text="Seleccione el disco que desea clonar." --separator="" --column 'Dispositivo' --height 380 --width 150 --button="ACEPTAR":0)
 	if [[ -z "$disco" ]]; then
 		yad --center --window-icon=error --title="Error" --button="Ir atras":0 --button="Salir":1 --text="No selecciono nada. Debe escoger un disco."
@@ -709,6 +705,10 @@ function xddclone () {
 }
 
 function xswapfilescan () {
+	unset -v ubicacion
+	unset -v peso
+	unset -v dispositivo3
+	contar=0
 	yad --center --text-align=fill --borders=6 --title="Swapfile Scan" --button="Crear archivo swap":0 --button="Buscar archivos swap":1 --button="Seleccionar la ubicacion del archivo swap":2 --button="Salir":3 --text="Seleccione la accion que desea realizar"
 	mode="$?"
 
@@ -728,7 +728,7 @@ function xswapfilescan () {
 			if [[ -z "$peso" ]]; then
 				$errores --button="Ir atras":0 --button="Salir":1 --text="No introdujo una cantidad."
 				if [[ $? = 0 ]]; then
-					source /usr/bin/swapfilescan
+					xswapfilescan
 				else
 					exit 0
 				fi
@@ -741,7 +741,6 @@ function xswapfilescan () {
 			;;
 
 		1)
-			contar=0
 			for i in $(find /media/user/ -type f -name "swapfile.swp"); do
 				let contar=$(($contar+1))
 				losetup /dev/loop$contar $i
