@@ -1,10 +1,22 @@
-commit 15ad266141ce3806ee9c8014ebcdb7d3d5c3c4ec (HEAD, master)
+commit e96c6c777db8e9755a7a2da480ef161dba1818e7 (HEAD, origin/master, origin/HEAD, master)
+Author: jose perez <sinfallas@gmail.com>
+Date:   Sun Aug 27 19:36:44 2017 -0400
+
+    * se elimina codigo innecesario
+
+commit d85523414788a00903afd2cea4ab12e7b9e4b895
+Author: jose perez <sinfallas@gmail.com>
+Date:   Thu Aug 17 19:42:15 2017 -0400
+
+    * changelog
+
+commit 15ad266141ce3806ee9c8014ebcdb7d3d5c3c4ec
 Author: jose perez <sinfallas@gmail.com>
 Date:   Thu Aug 17 19:40:07 2017 -0400
 
     * changelog
 
-commit d31b8bb839ccfdfcebcba7656048c98a3dfc206d (origin/master, origin/HEAD)
+commit d31b8bb839ccfdfcebcba7656048c98a3dfc206d
 Author: jose perez <sinfallas@gmail.com>
 Date:   Thu Aug 17 19:39:39 2017 -0400
 
