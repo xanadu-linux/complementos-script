@@ -57,11 +57,13 @@ function limpiar_1 () {
 	apt-get clean
 	rm -rf /tmp/*
 	rm -rf /var/tmp/*
+	rm -rf /var/cache/apt/*
+	rm -rf /var/cache/apt/archives/*
 	rm -rf /root/.local/share/Trash/*
 	rm -rf /home/*/.cache/*
 	rm -rf /home/*/.local/share/Trash/*
 	rm -rf /home/*/.mozilla/firefox/*/*Cache*
-	bleachbit -c adobe_reader.cache chromium.cache chromium.current_session chromium.history elinks.history emesene.cache epiphany.cache firefox.url_history flash.cache flash.cookies google_chrome.cache google_chrome.history links2.history opera.cache opera.search_history opera.url_history &> /dev/null
+	bleachbit -o -c adobe_reader.cache chromium.cache chromium.current_session chromium.history elinks.history emesene.cache epiphany.cache firefox.url_history flash.cache flash.cookies google_chrome.cache google_chrome.history links2.history opera.cache opera.search_history opera.url_history bash.history system.cache system.clipboard system.custom system.recent_documents system.rotated_logs system.tmp system.trash &> /dev/null
 }
 
 function iptables_clean () {

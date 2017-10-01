@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
+# Made by Sinfallas <sinfallas@yahoo.com>
+# Licence: GPL-2
 LC_ALL=C
+IFS=" "
+echo "$BASHPID" > /run/$(basename $0).pid
 source /usr/bin/variables
 limpiar_1
+rm -f /run/$(basename $0).pid
 exit 0
